@@ -1,0 +1,337 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: BWP Minify\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-10-07 22:54+0700\n"
+"PO-Revision-Date: 2013-08-21 09:43+0100\n"
+"Last-Translator: Martijn van Egmond <martijn@tensheep.nl>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Generator: Poedit 1.5.7\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: includes/class-bwp-framework.php:178
+#, php-format
+msgid ""
+"%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</"
+"strong> or higher. The plugin will not function until you update your "
+"software. Please deactivate this plugin."
+msgstr ""
+"%s vereist WordPress <strong>%s </strong> of hoger en PHP <strong>%s </"
+"strong> of hoger. De plugin zal niet werken totdat de software geupdate is. "
+"Deactiveer de plugin."
+
+#: includes/class-bwp-framework.php:189
+msgid "Development Log"
+msgstr "Development Log"
+
+#: includes/class-bwp-framework.php:189
+msgid "Frequently Asked Questions"
+msgstr "Veel gestelde vragen"
+
+#: includes/class-bwp-framework.php:189
+msgid "FAQ"
+msgstr "FAQ"
+
+#: includes/class-bwp-framework.php:189
+msgid "Got a problem? Send me a feedback!"
+msgstr "Heb je een probleem? Stuur mij feedback!"
+
+#: includes/class-bwp-framework.php:189
+msgid "Contact"
+msgstr "Contact"
+
+#: includes/class-bwp-framework.php:196
+msgid ""
+"You can buy me some special coffees if you appreciate my work, thank you!"
+msgstr ""
+"Je kunt voor mijeen aantal speciale koffies kopen wanneer je mijn werk "
+"waardeert, bedankt!"
+
+#: includes/class-bwp-framework.php:210
+msgid "Donate to "
+msgstr "Doneer"
+
+#: includes/class-bwp-framework.php:212
+msgid "One cup $5.00"
+msgstr "Een kopje $5,00"
+
+#: includes/class-bwp-framework.php:213
+msgid "Two cups $10.00"
+msgstr "Twee kopjes $10,00"
+
+#: includes/class-bwp-framework.php:214
+msgid "Five cups! $25.00"
+msgstr "Vijf kopjes! $25,00"
+
+#: includes/class-bwp-framework.php:215
+msgid "One LL-cup!!! $50.00"
+msgstr "Eén LL-kopje!!! $50,00"
+
+#: includes/class-bwp-framework.php:216
+msgid "... or any amount!"
+msgstr "… of een ander bedrag!"
+
+#: includes/class-bwp-framework.php:231
+msgid "Latest updates from BetterWP.net!"
+msgstr "Meest recente updates van BetterWP.net!"
+
+#: includes/class-bwp-framework.php:232
+msgid "Follow me on Twitter!"
+msgstr "Volg mij op Twitter!"
+
+#: includes/class-bwp-framework.php:241
+#, php-format
+msgid "You are using version %s!"
+msgstr "Je maakt gebruikt van versie %s!"
+
+#: includes/class-bwp-framework.php:377
+msgid "Settings"
+msgstr "Instellingen"
+
+#: includes/class-bwp-minify.php:110
+msgid "Better WordPress Minify Settings"
+msgstr "Better WordPress Minify instellingen"
+
+#: includes/class-bwp-minify.php:206
+msgid "Better WordPress Minify"
+msgstr "Better WordPress Minify"
+
+#: includes/class-bwp-minify.php:217
+msgid "You do not have sufficient permissions to access this page."
+msgstr "Je hebt niet de juiste rechten om deze pagina te bezoeken."
+
+#: includes/class-bwp-minify.php:233
+msgid "General Options"
+msgstr "Algemene opties"
+
+#: includes/class-bwp-minify.php:234
+msgid "Minify JS files automatically?"
+msgstr "Minify JS bestanden automatisch?"
+
+#: includes/class-bwp-minify.php:235
+msgid "Minify CSS files automatically?"
+msgstr "Minify CSS bestanden automatisch?"
+
+#: includes/class-bwp-minify.php:236
+msgid "Minify <code>bloginfo()</code> stylesheets?"
+msgstr "Minify <code>bloginfo()</code> stylesheets?"
+
+#: includes/class-bwp-minify.php:237
+msgid "Minifying Options"
+msgstr "Minifying opties"
+
+#: includes/class-bwp-minify.php:238
+msgid "Minify URL (double-click to edit)"
+msgstr "Minify URL (dubbel-click om te bewerken)"
+
+#: includes/class-bwp-minify.php:239
+msgid "Cache directory (double-click to edit)"
+msgstr "Cache directory (dubbel-click om te bewerken)"
+
+#: includes/class-bwp-minify.php:240
+msgid "One minify string will contain"
+msgstr "Eén minify string zal dit aantal bevatten"
+
+#: includes/class-bwp-minify.php:241
+msgid "Append the minify string with"
+msgstr "Voeg dit aan de minify string toe"
+
+#: includes/class-bwp-minify.php:242
+msgid "Minifying Scripts Options"
+msgstr "Minifying scripts opties"
+
+#: includes/class-bwp-minify.php:243
+msgid "Scripts to be minified in header"
+msgstr "Scripts die in de header geminified worden"
+
+#: includes/class-bwp-minify.php:244
+msgid "Scripts to be minified in footer"
+msgstr "Scripts die in de footer geminified worden"
+
+#: includes/class-bwp-minify.php:245
+msgid "Scripts to be minified and then printed separately"
+msgstr ""
+"Scripts die geminified worden en dan in losse bestanden worden geplaatst"
+
+#: includes/class-bwp-minify.php:246
+msgid "Scripts to be ignored (not minified)"
+msgstr "Scripts die worden genegeerd (niet geminified)"
+
+#: includes/class-bwp-minify.php:251
+msgid "<em>Options that affect both your stylesheets and scripts.</em>"
+msgstr ""
+"<em>Opties die effect hebben op zowel de aanwezige stylesheets als scripts.</"
+"em>"
+
+#: includes/class-bwp-minify.php:252
+#, php-format
+msgid ""
+"<em>You can force the position of each script using those inputs below (e.g. "
+"you have a script registered in the header but you want to minify it in the "
+"footer instead). If you are still unsure, please read more <a href="
+"\"%s#positioning-your-scripts\">here</a>. Type in one script handle "
+"(<strong>NOT filename</strong>) per line.</em>"
+msgstr ""
+"<em>Je kan de positie van elk script bepalen met de onderstaande "
+"instellingen (bijv. er is een script in de header, maar de nieuwe versie wil "
+"je in de footer hebben). Als je niet zeker weet hoe het werk, lees <a href="
+"\"%s#positioning-your-scripts\">hier</a> meer. Type een script handle "
+"(<strong> GEEN bestandsnaam</strong>) per regel.</em>"
+
+#: includes/class-bwp-minify.php:256
+msgid "second(s)"
+msgstr "seconde(n)"
+
+#: includes/class-bwp-minify.php:257
+msgid "minute(s)"
+msgstr "minuut(/minuten)"
+
+#: includes/class-bwp-minify.php:258
+msgid "hour(s)"
+msgstr "uur(/uren)"
+
+#: includes/class-bwp-minify.php:259
+msgid "day(s)"
+msgstr "dag(en)"
+
+#: includes/class-bwp-minify.php:262
+msgid "Do not append anything"
+msgstr "Voeg niets toe"
+
+#: includes/class-bwp-minify.php:263
+msgid "Cache folder&#8217;s last modified time"
+msgstr "Cache folder&#8217;s laatst gewijzigde tijd"
+
+#: includes/class-bwp-minify.php:264
+msgid "Your WordPress&#8217;s current version"
+msgstr "Jouw WordPress&#8217;s huidige versie"
+
+#: includes/class-bwp-minify.php:265
+msgid "Your theme&#8217;s current version"
+msgstr "Jouw thema&#8217;s huidige versie"
+
+#: includes/class-bwp-minify.php:266
+msgid "A custom number"
+msgstr "Een aangepast getal"
+
+#: includes/class-bwp-minify.php:270 includes/class-bwp-minify.php:271
+msgid ""
+"you can still use <code>bwp_minify()</code> helper function if you disable "
+"this."
+msgstr ""
+"u kunt nog steeds gebruik maken van <code>bwp_minify ()</code>helper functie "
+"als je deze uitschakelt."
+
+#: includes/class-bwp-minify.php:272
+msgid ""
+"most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main "
+"stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to "
+"add it to the main minify string. If you want to minify <code>style.css</"
+"code> with the rest of your css files, you must enqueue it."
+msgstr ""
+"de meeste thema's (bijv. Twenty Ten) maken gebruik van <code>bloginfo()</"
+"code> om de stylesheet te plaatsen (d.w.z. <code>style.css</code> "
+
+#: includes/class-bwp-minify.php:275
+#, php-format
+msgid ""
+"This should be set automatically. If you think the URL is too long, please "
+"read <a href=\"%s#customization\">here</a> to know how to properly modify "
+"this."
+msgstr ""
+"Deze moet automatisch worden ingesteld. Als je denkt dat de URL te lang is, "
+"lees dan <a href=\"%s#customization\">hier</a> hoe je dit zelf op de juiste "
+"manier kan aanpassen."
+
+#: includes/class-bwp-minify.php:276
+#, php-format
+msgid ""
+"<strong>Important</strong>: Changing cache directory is a two-step process, "
+"which is described in details <a href=\"%s#advanced_customization\" target="
+"\"_blank\">here</a>. Please note that cache directory must be writable (i.e. "
+"CHMOD to 755 or 777)."
+msgstr ""
+"<strong>Belangrijk</strong>: Het wijzigen van de cache directory is een "
+"proces van twee stappen, die <a href=\"%s#advanced_customization\" target="
+"\"_blank\">hier</a> beschreven staan. Houd er rekening mee dat de cache "
+"directory schrijfbaar moet zijn (d.w.z. CHMOD 755 of 777)."
+
+#: includes/class-bwp-minify.php:277
+msgid "file(s) at most."
+msgstr "maximaal aantal bestanden."
+
+#: includes/class-bwp-minify.php:278
+msgid "&mdash;"
+msgstr "&mdash;"
+
+#: includes/class-bwp-minify.php:279
+msgid "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+msgstr "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+
+#: includes/class-bwp-minify.php:289
+msgid ""
+"<em><strong>Note:</strong> When you append one of the things above you are "
+"basically telling browsers to clear their cached version of your CSS and JS "
+"files, which is very useful when you change source files. Use this feature "
+"wisely :).</em>"
+msgstr ""
+"<em><strong>Opmerking:</strong> Wanneer je één van de bovenstaande toevoegd "
+"wordt er aan de browser doorgegeven om de cache bestanden van jou CSS and JS "
+"bestanden te verwijderen, dit is zeer nuttig wanneer je de bronbestanden "
+"wijzigt. Gebruik deze functie verstandig :).</em>"
+
+#: includes/class-bwp-minify.php:296
+msgid "Flush the cache"
+msgstr "Verwijder de cache"
+
+#: includes/class-bwp-minify.php:316 includes/class-bwp-minify.php:318
+msgid "Notice"
+msgstr "Opmerking"
+
+#: includes/class-bwp-minify.php:316
+#, php-format
+msgid "<strong>%d</strong> cached files have been deleted successfully!"
+msgstr ""
+"<strong>%d</strong> alle bestanden in de cache zijn succesvol verwijderd!"
+
+#: includes/class-bwp-minify.php:318
+msgid ""
+"Could not delete any cached files. Please manually check the cache directory."
+msgstr ""
+"Kan geen enkel bestand in de cache verwijderen. Check de cache directory "
+"handmatig."
+
+#: includes/class-bwp-minify.php:352
+msgid "All options have been saved."
+msgstr "Alle opties zijn opgeslagen"
+
+#: includes/class-bwp-minify.php:368
+msgid "Warning"
+msgstr "Waarschuwing"
+
+#: includes/class-bwp-minify.php:368
+msgid ""
+"Cache directory does not exist or is not writable. Please try CHMOD your "
+"cache directory to 755. If you still see this warning, CHMOD to 777."
+msgstr ""
+"Cache directory bestand niet of is niet schrijfbaar. Probeer de "
+"schrijfrechten van de cache directory te wijzigen naar CHMOD 755. Als je nog "
+"steeds deze waarschuwing ziet, wijzig dan naar CHMOD 777."
+
+#: includes/class-bwp-minify.php:490
+msgid "empty"
+msgstr "leeg"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:80
+msgid "Plugin Configurations"
+msgstr "Plugin configuratie"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:398
+msgid "Save Changes"
+msgstr "Wijzigingen opslaan"

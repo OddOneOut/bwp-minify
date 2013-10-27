@@ -1,0 +1,286 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: BWP Minify\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-03-20 21:51+0700\n"
+"PO-Revision-Date: 2012-03-20 21:51+0700\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: includes/class-bwp-framework.php:177
+#, php-format
+msgid "%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</strong> or higher. The plugin will not function until you update your software. Please deactivate this plugin."
+msgstr "%s necesita versiunea de Wordpress <strong>%s</strong> sau mai mare si PHP <strong>%s</strong> sau mai mare. Plugin-ul nu va functiona pana nu actualizati programele. Va rugam dezactivati plugin-ul."
+
+#: includes/class-bwp-framework.php:188
+msgid "Development Log"
+msgstr "Log dezvoltare"
+
+#: includes/class-bwp-framework.php:188
+msgid "Frequently Asked Questions"
+msgstr "Intrebari frecvente"
+
+#: includes/class-bwp-framework.php:188
+msgid "FAQ"
+msgstr "FAQ"
+
+#: includes/class-bwp-framework.php:188
+msgid "Got a problem? Send me a feedback!"
+msgstr "Ai o problema? Trimite-mi feedback!"
+
+#: includes/class-bwp-framework.php:188
+msgid "Contact"
+msgstr "Contact"
+
+#: includes/class-bwp-framework.php:195
+#, fuzzy
+msgid "You can buy me some special coffees if you appreciate my work, thank you!"
+msgstr "Imi poti face cinste cu o cafea, daca apreciezi munca mea!"
+
+#: includes/class-bwp-framework.php:209
+msgid "Donate to "
+msgstr "Doneaza"
+
+#: includes/class-bwp-framework.php:211
+msgid "One cup $5.00"
+msgstr "O cana $5.00"
+
+#: includes/class-bwp-framework.php:212
+msgid "Two cups $10.00"
+msgstr "2 cani $10.00"
+
+#: includes/class-bwp-framework.php:213
+msgid "Five cups! $25.00"
+msgstr "5 cani $25.00"
+
+#: includes/class-bwp-framework.php:214
+msgid "One LL-cup!!! $50.00"
+msgstr "O cana extra-large $50.00"
+
+#: includes/class-bwp-framework.php:215
+msgid "... or any amount!"
+msgstr "... sau orice suma!"
+
+#: includes/class-bwp-framework.php:230
+msgid "Latest updates from BetterWP.net!"
+msgstr "Cele mai recent update-uri de la BetterWP.net!"
+
+#: includes/class-bwp-framework.php:231
+msgid "Follow me on Twitter!"
+msgstr "Urmareste-ma pe Twitter!"
+
+#: includes/class-bwp-framework.php:240
+#, php-format
+msgid "You are using version %s!"
+msgstr "Folosesti versiunea %s!"
+
+#: includes/class-bwp-framework.php:376
+msgid "Settings"
+msgstr "Setari"
+
+#: includes/class-bwp-minify.php:110
+msgid "Better WordPress Minify Settings"
+msgstr "Setari Better WordPress Minify "
+
+#: includes/class-bwp-minify.php:196
+msgid "Better WordPress Minify"
+msgstr "Better WordPress Minify"
+
+#: includes/class-bwp-minify.php:207
+msgid "You do not have sufficient permissions to access this page."
+msgstr "Nu aveti permisiuni suficiente pentru a accesa aceasta pagina!"
+
+#: includes/class-bwp-minify.php:223
+msgid "General Options"
+msgstr "Optiuni generale"
+
+#: includes/class-bwp-minify.php:224
+#, fuzzy
+msgid "Minify JS files automatically?"
+msgstr "Fa compresie pentru fisierele CSS, JS automat?"
+
+#: includes/class-bwp-minify.php:225
+#, fuzzy
+msgid "Minify CSS files automatically?"
+msgstr "Fa compresie pentru fisierele CSS, JS automat?"
+
+#: includes/class-bwp-minify.php:226
+msgid "Minify <code>bloginfo()</code> stylesheets?"
+msgstr "Fa compresie la stylesheet-urile <code>bloginfo()</code>?"
+
+#: includes/class-bwp-minify.php:227
+msgid "Minifying Options"
+msgstr "Optiuni de compresie"
+
+#: includes/class-bwp-minify.php:228
+msgid "Minify URL (double-click to edit)"
+msgstr "Compresie URL (faceti dublu clic pentru a edita)"
+
+#: includes/class-bwp-minify.php:229
+#, fuzzy
+msgid "Cache directory (double-click to edit)"
+msgstr "Compresie URL (faceti dublu clic pentru a edita)"
+
+#: includes/class-bwp-minify.php:230
+msgid "One minify string will contain"
+msgstr "Un string minify (de compresie) va contine"
+
+#: includes/class-bwp-minify.php:231
+msgid "Append the minify string with"
+msgstr "Adauga string-ului"
+
+#: includes/class-bwp-minify.php:232
+msgid "Minifying Scripts Options"
+msgstr "Optiuni de script Minify"
+
+#: includes/class-bwp-minify.php:233
+msgid "Scripts to be minified in header"
+msgstr "Scripturi de comprimat in header"
+
+#: includes/class-bwp-minify.php:234
+msgid "Scripts to be minified in footer"
+msgstr "Scripturi de comprimat in footer"
+
+#: includes/class-bwp-minify.php:235
+msgid "Scripts to be minified and then printed separately"
+msgstr "Scripturi de comprimat si imprimate separate"
+
+#: includes/class-bwp-minify.php:236
+msgid "Scripts to be ignored (not minified)"
+msgstr "Scripturi de ignorat (nu vor fi comprimate)"
+
+#: includes/class-bwp-minify.php:241
+msgid "<em>Options that affect both your stylesheets and scripts.</em>"
+msgstr "<em>Optiuni care afecteaza scripturile si stylesheet-urile.</em>"
+
+#: includes/class-bwp-minify.php:242
+#, php-format
+msgid "<em>You can force the position of each script using those inputs below (e.g. you have a script registered in the header but you want to minify it in the footer instead). If you are still unsure, please read more <a href=\"%s#positioning-your-scripts\">here</a>. Type in one script handle (<strong>NOT filename</strong>) per line.</em>"
+msgstr "<em>Puteti forta pozitia fiecarui script folosind datele de mai jos (ex. aveti un script in header dar vreti sa il comprimati in footer). Pentru mai multe informatii accesati pagina de <a href=\"%s#positioning-your-scripts\">aici</a>. Introduceti o comanda (<strong>NU nume de fisier</strong>) pe linie.</em>"
+
+#: includes/class-bwp-minify.php:246
+msgid "second(s)"
+msgstr "secunda(-e)"
+
+#: includes/class-bwp-minify.php:247
+msgid "minute(s)"
+msgstr "minut(-e)"
+
+#: includes/class-bwp-minify.php:248
+msgid "hour(s)"
+msgstr "ora(-e)"
+
+#: includes/class-bwp-minify.php:249
+msgid "day(s)"
+msgstr "zi(le)"
+
+#: includes/class-bwp-minify.php:252
+msgid "Do not append anything"
+msgstr "Nu adauga nimic"
+
+#: includes/class-bwp-minify.php:253
+msgid "Cache folder&#8217;s last modified time"
+msgstr "Folder deCache &#8217;s modificat ultima data"
+
+#: includes/class-bwp-minify.php:254
+msgid "Your WordPress&#8217;s current version"
+msgstr "Versiunea curenta de WordPress&#8217;s"
+
+#: includes/class-bwp-minify.php:255
+msgid "A custom number"
+msgstr "Un numar personalizat"
+
+#: includes/class-bwp-minify.php:259
+#: includes/class-bwp-minify.php:260
+#, fuzzy
+msgid "you can still use <code>bwp_minify()</code> helper function if you disable this."
+msgstr "puteti folosi in continuare functia de template function <code>bwp_minify()</code> daca dezactivati."
+
+#: includes/class-bwp-minify.php:261
+msgid "most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it."
+msgstr "majoritatea temelor (ex. Twenty Ten) folosesc <code>bloginfo()</code> pentru a genera stylesheet-ul principal (i.e. <code>style.css</code>) iar BWP Minify nu va putea sa il adauge la string-ul primar. Daca doriti sa comprimati <code>style.css</code> cu celelalte fisiere css, trebuie sa il adaugati in sir."
+
+#: includes/class-bwp-minify.php:264
+#, php-format
+msgid "This should be set automatically. If you think the URL is too long, please read <a href=\"%s#customization\">here</a> to know how to properly modify this."
+msgstr "Ar trebui setat automat. Daca credeti ca URL-ul este prea lung, va rugam cititi <a href=\"%s#customization\">aici</a> pentru a afla cum puteti modifica aceasta functie"
+
+#: includes/class-bwp-minify.php:265
+#, php-format
+msgid "<strong>Important</strong>: Changing cache directory is a two-step process, which is described in details <a href=\"%s#config\" target=\"_blank\">here</a>. Please note that cache directory must be writable (i.e. CHMOD to 755 or 777)."
+msgstr ""
+
+#: includes/class-bwp-minify.php:266
+msgid "file(s) at most."
+msgstr "fisier(e) maxim."
+
+#: includes/class-bwp-minify.php:267
+msgid "&mdash;"
+msgstr "&mdash;"
+
+#: includes/class-bwp-minify.php:268
+msgid "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+msgstr "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+
+#: includes/class-bwp-minify.php:278
+msgid "<em><strong>Note:</strong> When you append one of the things above you are basically telling browsers to clear their cached version of your CSS and JS files, which is very useful when you change source files. Use this feature wisely :).</em>"
+msgstr "<em><strong>Nota:</strong> Cand adaugati unul dintre lucrurile de mai sus, le spuneti browserelor sa curete versiunea din cache a fisierelor CSS si JS, un lucru util pentru atunci cand schimbati sursa fisierelor. Folositi functia cu atentie :).</em>"
+
+#: includes/class-bwp-minify.php:285
+msgid "Flush the cache"
+msgstr ""
+
+#: includes/class-bwp-minify.php:305
+#: includes/class-bwp-minify.php:307
+msgid "Notice"
+msgstr ""
+
+#: includes/class-bwp-minify.php:305
+#, php-format
+msgid "<strong>%d</strong> cached files have been deleted successfully!"
+msgstr ""
+
+#: includes/class-bwp-minify.php:307
+msgid "Could not delete any cached files. Please manually check the cache directory."
+msgstr ""
+
+#: includes/class-bwp-minify.php:341
+msgid "All options have been saved."
+msgstr ""
+
+#: includes/class-bwp-minify.php:357
+msgid "Warning"
+msgstr "Avertisment"
+
+#: includes/class-bwp-minify.php:357
+msgid "Cache directory does not exist or is not writable. Please try CHMOD your cache directory to 755. If you still see this warning, CHMOD to 777."
+msgstr "Directorul de cache nu exista sau nu este writable. Va rugam schimbati CHMOD pentru acest director la 755. Daca eroarea persista, schimbati la 777."
+
+#: includes/class-bwp-minify.php:471
+msgid "empty"
+msgstr "gol"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:80
+msgid "Plugin Configurations"
+msgstr "Configurarea plugin-ului"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:398
+msgid "Save Changes"
+msgstr "Salveaza schimbarile"
+
+#~ msgid "Cache will be stored in (by default)"
+#~ msgstr "Cache-ul va fi stocat in"
+
+#~ msgid "The cache directory must be writable (i.e. CHMOD to 755 or 777)."
+#~ msgstr ""
+#~ "Directorul de cache trebuie sa fie writable (CHMOD setat la 755 sau 777)."
+
+#~ msgid "log"
+#~ msgstr "log"
