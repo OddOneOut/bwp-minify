@@ -73,7 +73,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 	/**
 	 * Constructor
 	 */	
-	function __construct($version = '1.2.3')
+	function __construct($version = '1.2.3-1')
 	{
 		// Plugin's title
 		$this->plugin_title = 'BetterWP Minify';
@@ -111,7 +111,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 
 		add_action('init', array($this, 'default_minurl'));
 		add_action('init', array($this, 'init'));
-
 	}
 
 	function default_minurl()
