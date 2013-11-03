@@ -98,6 +98,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 			'enable_min_js' => 'yes',
 			'enable_min_css' => 'yes',
 			'enable_bloginfo' => 'yes',
+			'defer_js' => 'no',
 			'select_buster_type' => 'none',
 			'select_time_type' => 60
 		);
@@ -110,6 +111,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 
 		add_action('init', array($this, 'default_minurl'));
 		add_action('init', array($this, 'init'));
+
 	}
 
 	function default_minurl()
@@ -240,13 +242,14 @@ if (!empty($page))
 	if ($page == BWP_MINIFY_OPTION_GENERAL)
 	{
 		$form = array(
-			'items'			=> array('heading', 'checkbox', 'checkbox', 'checkbox', 'heading', 'input', 'input', 'input', 'select', 'heading', 'textarea', 'textarea', 'textarea', 'textarea'),
+			'items'			=> array('heading', 'checkbox', 'checkbox', 'checkbox', 'checkbox', 'heading', 'input', 'input', 'input', 'select', 'heading', 'textarea', 'textarea', 'textarea', 'textarea'),
 			'item_labels'	=> array
 			(
 				__('General Options', 'bwp-minify'),
 				__('Minify JS files automatically?', 'bwp-minify'),
 				__('Minify CSS files automatically?', 'bwp-minify'),
 				__('Minify <code>bloginfo()</code> stylesheets?', 'bwp-minify'),
+				__('Defer JavaScript', 'bwp-minify'),
 				__('Minifying Options', 'bwp-minify'),
 				__('Minify URL (double-click to edit)', 'bwp-minify'),
 				__('Cache directory (double-click to edit)', 'bwp-minify'),
@@ -258,7 +261,7 @@ if (!empty($page))
 				__('Scripts to be minified and then printed separately', 'bwp-minify'),
 				__('Scripts to be ignored (not minified)', 'bwp-minify')
 			),
-			'item_names'	=> array('h1', 'cb1', 'cb3', 'cb2', 'h2', 'input_minurl', 'input_cache_dir', 'input_maxfiles', 'select_buster_type', 'h3', 'input_header', 'input_footer', 'input_direct', 'input_ignore'),
+			'item_names'	=> array('h1', 'cb1', 'cb3', 'cb2', 'cb4', 'h2', 'input_minurl', 'input_cache_dir', 'input_maxfiles', 'select_buster_type', 'h3', 'input_header', 'input_footer', 'input_direct', 'input_ignore'),
 			'heading'			=> array(
 				'h1'	=> '',
 				'h2'	=> __('<em>Options that affect both your stylesheets and scripts.</em>', 'bwp-minify'),
@@ -282,7 +285,8 @@ if (!empty($page))
 			'checkbox'	=> array(
 				'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_js'),
 				'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_css'),
-				'cb2' => array(__('most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo')
+				'cb2' => array(__('most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo'),
+				'cb4' => array(__('Deferring JavaScript can improve browser rendering speed.', 'bwp-minify') => 'defer_js')
 			),
 			'input'	=> array(
 				'input_minurl' => array('size' => 55, 'disabled' => ' readonly="readonly"', 'label' => sprintf(__('This should be set automatically. If you think the URL is too long, please read <a href="%s#customization">here</a> to know how to properly modify this.', 'bwp-minify'), $this->plugin_url)),
@@ -311,8 +315,8 @@ if (!empty($page))
 		);
 
 		// Get the default options
-		$options = $bwp_option_page->get_options(array('input_minurl', 'input_cache_dir', 'input_maxfiles', 'input_header', 'input_footer', 'input_direct', 'input_ignore', 'input_custom_buster', 'select_buster_type', 'enable_min_js', 'enable_min_css', 'enable_bloginfo'), $this->options);
-
+		$options = $bwp_option_page->get_options(array('input_minurl', 'input_cache_dir', 'input_maxfiles', 'input_header', 'input_footer', 'input_direct', 'input_ignore', 'input_custom_buster', 'select_buster_type', 'enable_min_js', 'enable_min_css', 'enable_bloginfo', 'defer_js'), $this->options);
+		
 		// Get option from the database
 		$options = $bwp_option_page->get_db_options($page, $options);
 
@@ -749,7 +753,9 @@ if (!empty($page))
 		switch ($type)
 		{
 			case 'script':
-				$return  = "<script type='text/javascript' src='" . $this->get_minify_src($string) . "'></script>\n";
+				// DBS 2013-11-03
+				$defer = ( 'yes' === $this->options[ 'defer_js' ] ) ?	$defer = 'defer="defer" ' : '';
+				$return  = "<script " . $defer . "type='text/javascript' src='" . $this->get_minify_src($string) . "'></script>\n";
 			break;
 			
 			case 'style':

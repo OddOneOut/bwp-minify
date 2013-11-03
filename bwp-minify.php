@@ -15,9 +15,12 @@ License: GPLv3
 if (class_exists('BWP_MINIFY'))
 	return;
 
-// Frontend
-require_once('includes/class-bwp-minify.php');
-$bwp_minify = new BWP_MINIFY();
+// DBS HB 2013-11-02
+if ( ! defined( 'BWP_DISABLED' ) || BWP_DISABLED == 'false' || BWP_DISABLED === false ) {
+	// Frontend
+	require_once('includes/class-bwp-minify.php');
+	$bwp_minify = new BWP_MINIFY();
+}
 
 // Backend
 add_action('admin_menu', 'bwp_minify_init_admin', 1);
