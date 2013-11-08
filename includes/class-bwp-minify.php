@@ -488,9 +488,18 @@ if (!empty($page))
 			break;
 
 			case 'tver':
-				$theme = get_theme_data(STYLESHEETPATH . '/style.css');
-				if (!empty($theme['Version']))
-					$buster = $theme['Version'];
+				if (function_exists('wp_get_theme')) {
+					$theme = wp_get_theme(STYLESHEETPATH);
+					if ($theme) {
+						$version = $theme->get('Version');
+						if (!empty($version))
+							$buster = $version;
+					}
+				} else {
+					$theme = get_theme_data(STYLESHEETPATH . '/style.css');
+					if (!empty($theme['Version']))
+						$buster = $theme['Version'];
+				}
 			break;
 
 			case 'custom':
