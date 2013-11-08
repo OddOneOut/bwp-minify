@@ -489,7 +489,7 @@ if (!empty($page))
 
 			case 'tver':
 				if (function_exists('wp_get_theme')) {
-					$theme = wp_get_theme(STYLESHEETPATH);
+					$theme = wp_get_theme();
 					if ($theme) {
 						$version = $theme->get('Version');
 						if (!empty($version))
