@@ -49,22 +49,22 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 	 * Determine positions to manually put scripts in
 	 */
 	var $print_positions = array('header' => array(), 'footer' => array(), 'direct' => array(), 'ignore' => array());
-	
+
 	/**
 	 * Are scripts still queueable?
 	 */
 	var $queueable = true;
-	
+
 	/**
 	 * Queued styles to be printed
 	 */
 	var $styles = array(array()), $media_styles = array('print' => array()), $dynamic_media_styles = array('print' => array()), $dynamic_styles = array(), $inline_styles = array(), $wp_styles_done = array();
-	 
+
 	/**
 	 * Are we still able to print styles?
 	 */
 	var $printable = true;
-	 
+
 	/**
 	 * Other options
 	 */
@@ -72,7 +72,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 
 	/**
 	 * Constructor
-	 */	
+	 */
 	function __construct($version = '1.2.3')
 	{
 		// Plugin's title
@@ -218,25 +218,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK {
 	{
 		add_options_page(__('Better WordPress Minify', 'bwp-minify'), 'BWP Minify', BWP_MINIFY_CAPABILITY, BWP_MINIFY_OPTION_GENERAL, array($this, 'build_option_pages'));		
 	}
-	
+
 	/**
 	 * Build the option pages
 	 *
 	 * Utilizes BWP Option Page Builder (@see BWP_OPTION_PAGE)
-	 */	
+	 */
 	function build_option_pages()
 	{
 		if (!current_user_can(BWP_MINIFY_CAPABILITY))
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 
 		// Init the class
-		$page = $_GET['page'];		
+		$page = $_GET['page'];
 		$bwp_option_page = new BWP_OPTION_PAGE($page, $this->site_options);
-		
+
 		$options = array();
-		
+
 if (!empty($page))
-{	
+{
 	if ($page == BWP_MINIFY_OPTION_GENERAL)
 	{
 		$form = array(
@@ -390,10 +390,10 @@ if (!empty($page))
 	</script>
 <?php
 
-		// Assign the form and option array		
+		// Assign the form and option array
 		$bwp_option_page->init($form, $options, $this->form_tabs);
 
-		// Build the option page	
+		// Build the option page
 		echo $bwp_option_page->generate_html_form();
 	}
 
@@ -457,8 +457,8 @@ if (!empty($page))
 				$position = explode("\n", $position);
 				$position = array_map('trim', $position);
 			}
-		}				
-		
+		}
+
 		$this->print_positions = $positions;
 	}
 
@@ -506,7 +506,7 @@ if (!empty($page))
 
 		return apply_filters('bwp_minify_get_buster', $buster);
 	}
-	
+
 	function is_in($handle, $position = 'header')
 	{
 		if (!isset($this->print_positions[$position]) || !is_array($this->print_positions[$position]))
@@ -701,18 +701,18 @@ if (!empty($page))
 			$extra_media = ('scripts' == $type) ? array_merge($this->header_dynamic, $this->footer_dynamic) : array_merge($this->dynamic_styles);
 			if (in_array($handle, $extra_media))
 				return 'wp';
-		}		
+		}
 		return false;
 	}
 
 	/**
 	 * Append minify strings, support splitting strings into shorted ones.
-	 * 
+	 *
 	 * @param array_K $media
 	 * @param number $count
 	 * @param string $src
 	 * @param string $done
-	 * @param string $parent 
+	 * @param string $parent
 	 * @param string $type
 	 */
 	function append_minify_string(&$media = array(), &$count = 0, $src = '', $done = false, $parent = false, $type = 'scripts')
@@ -751,9 +751,9 @@ if (!empty($page))
 			case 'script':
 				$return  = "<script type='text/javascript' src='" . $this->get_minify_src($string) . "'></script>\n";
 			break;
-			
+
 			case 'style':
-			default:			
+			default:
 				$return = "<link rel='stylesheet' type='text/css' media='all' href='" . $this->get_minify_src($string) . "' />\n";
 			break;
 
@@ -781,7 +781,7 @@ if (!empty($page))
 		}
 		else
 			$rtl_href = $wp_styles->registered[$handle]->extra['rtl'];
-		
+
 		return $this->process_media_source($rtl_href);
 	}
 
@@ -911,7 +911,7 @@ if (!empty($page))
 	 * Main function to print out our stylesheets
 	 *
 	 * Use actions provided to add other things before or after the output.
-	 */	
+	 */
 	function print_styles()
 	{
 		do_action('bwp_minify_before_styles');
@@ -926,7 +926,7 @@ if (!empty($page))
 
 		do_action('bwp_minify_after_styles');
 	}
-	
+
 	function print_media_styles()
 	{
 		do_action('bwp_minify_before_media_styles');
@@ -1095,7 +1095,7 @@ if (!empty($page))
 							$this->header_l10n[] = $script_handle;
 					}
 					else
-						$this->ignores_script($script_handle, $temp, $the_script->deps, $ignore_type);				
+						$this->ignores_script($script_handle, $temp, $the_script->deps, $ignore_type);
 				}
 				else
 				{
@@ -1122,7 +1122,7 @@ if (!empty($page))
 	 * Main function to print out our scripts
 	 *
 	 * Use actions provided to add other things before or after the output.
-	 */	
+	 */
 	function print_scripts($action = 'header')
 	{
 		do_action('bwp_minify_before_' . $action . '_scripts');
