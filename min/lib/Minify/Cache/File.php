@@ -97,7 +97,11 @@ class Minify_Cache_File {
     public function fetch($id)
     {
         if ($this->_locking) {
-            $fp = fopen($this->_path . '/' . $id, 'rb');
+	   	// fixme: this occasionally spits out bogus "no such file" warnings and cannot modify header noise. 2013-11-13 HB
+            @$fp = fopen($this->_path . '/' . $id, 'rb');
+		  if ( false === $fp ) {
+			return;
+		  }
             flock($fp, LOCK_SH);
             $ret = stream_get_contents($fp);
             flock($fp, LOCK_UN);
