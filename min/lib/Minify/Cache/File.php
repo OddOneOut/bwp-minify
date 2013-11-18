@@ -97,7 +97,7 @@ class Minify_Cache_File {
     public function fetch($id)
     {
         if ($this->_locking) {
-	   	// fixme: this occasionally spits out bogus "no such file" warnings and cannot modify header noise. 2013-11-13 HB
+	   	// FIXME: this occasionally spits out bogus "no such file" warnings and cannot modify header noise. Possibly due to symlinks. 2013-11-13 HB
             @$fp = fopen($this->_path . '/' . $id, 'rb');
 		  if ( false === $fp ) {
 			return;

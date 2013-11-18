@@ -16,7 +16,7 @@ if (class_exists('BWP_MINIFY'))
 	return;
 
 // DBS HB 2013-11-02
-if ( ! defined( 'BWP_DISABLED' ) || BWP_DISABLED === 'false' || BWP_DISABLED === false ) {
+if ( ! defined( 'BWP_DISABLED' ) || BWP_DISABLED === 'false' || BWP_DISABLED === false || is_admin() ) {
 	// Frontend
 	require_once('includes/class-bwp-minify.php');
 	$bwp_minify = new BWP_MINIFY();
