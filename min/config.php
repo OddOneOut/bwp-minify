@@ -91,7 +91,8 @@ $min_cacheFileLocking = true;
  * move all @imports to the top of the output. Note that moving @imports could 
  * affect CSS values (which is why this option is disabled by default).
  */
-$min_serveOptions['bubbleCssImports'] = false;
+ // DBS 2013-11-26, set to true ... why not?
+$min_serveOptions['bubbleCssImports'] = true;
 
 
 /**
