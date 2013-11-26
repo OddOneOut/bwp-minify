@@ -560,6 +560,11 @@ if (!empty($page))
 		if (false === strpos($src, '://') && substr($src, 0, 1) != '/') {
 			$src = 'http://'. $src;
 		}
+		// DBS 2013-11-25, handle protocol-less scheme
+		if (strncmp($src, '//', 2) == 0) { 
+          	$protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https:' : 'http:';
+          	$src = $protocol . $src;
+		}  		
 		$url = @parse_url($src);
 		$blog_url = @parse_url(home_url());
 		if (false === $url)
