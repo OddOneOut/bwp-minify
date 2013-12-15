@@ -1,14 +1,16 @@
 === Better WordPress Minify ===
-Contributors: OddOneOut
+Contributors: OddOneOut, dbswebsite
 Donate link: http://betterwp.net/wordpress-plugins/bwp-minify/
 Tags: CSS, javascript, JS, minify, minification, optimization, optimize
 Requires at least: 2.8
 Tested up to: 3.7
-Stable tag: 1.2.3
+Stable tag: 1.2.3-1
 
 Allows you to minify your CSS and JS files for faster page loading for visitors.
 
 == Description ==
+
+This fork adds the ability to defer JavaScript.
 
 **BWP MINIFY IS WORDPRESS 3.7 COMPATIBLE**
 
@@ -73,6 +75,10 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 1. Changing the Minify URL, now one can have a shorter and nicer URL ;)
 
 == Changelog ==
+
+= 1.2.3-1 =
+* Add a configuration option for deferring JavaScript
+* Create a constant that allows programatically disabling BWP, ie BWP_DISABLED.
 
 = 1.2.3 =
 * BWP Minify is now WordPress 3.7 compatible (compatibility issues with WordPress 3.5 and 3.6 have been fixed).

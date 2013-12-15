@@ -91,7 +91,8 @@ $min_cacheFileLocking = true;
  * move all @imports to the top of the output. Note that moving @imports could 
  * affect CSS values (which is why this option is disabled by default).
  */
-$min_serveOptions['bubbleCssImports'] = false;
+ // DBS 2013-11-26, set to true ... why not?
+$min_serveOptions['bubbleCssImports'] = true;
 
 
 /**
@@ -103,7 +104,8 @@ $min_serveOptions['bubbleCssImports'] = false;
  * Note: Despite this setting, if you include a number at the end of the
  * querystring, maxAge will be set to one year. E.g. /min/f=hello.css&123456
  */
-$min_serveOptions['maxAge'] = 7200;
+// DBS 2013-12-15, increase max age for better caching
+$min_serveOptions['maxAge'] = 86400*10;
 
 
 /**
