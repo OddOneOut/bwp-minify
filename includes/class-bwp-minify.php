@@ -599,7 +599,16 @@ if (!empty($page))
 		if (0 === strpos($src, 'http'))
 		{
 			// We will need to handle both http and https, even if site URL is still set to http
-			$tmp_src = str_replace(site_url(), '', $src);
+			$site_url = site_url();
+			if (0 === strpos($src, 'https'))
+			{
+				$src = str_replace('https', 'http', $src);
+			}
+			if (0 === strpos($site_url, 'https'))
+			{
+				$site_url = str_replace('https', 'http', $site_url);
+			}
+			$tmp_src = str_replace( $site_url, '', $src );
 			// If there was no difference between tmp_src and src, we need to loop through the base
 			if ($tmp_src == $src && !empty($this->base))
 			{
