@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2012 Khang Minh <betterwp.net>
+ * Copyright (c) 2014 Khang Minh <betterwp.net>
  * @license http://www.gnu.org/licenses/gpl.html GNU GENERAL PUBLIC LICENSE VERSION 3.0 OR LATER
  */
  

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 Khang Minh <betterwp.net>
+ * Copyright (c) 2014 Khang Minh <betterwp.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1190,4 +1190,3 @@ if (!empty($page))
 		$this->print_scripts_l10n($this->footer_l10n);
 	}
 }
-?>
