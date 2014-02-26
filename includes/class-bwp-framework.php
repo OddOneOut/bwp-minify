@@ -3,7 +3,7 @@
  * Copyright (c) 2014 Khang Minh <betterwp.net>
  * @license http://www.gnu.org/licenses/gpl.html GNU GENERAL PUBLIC LICENSE VERSION 3.0 OR LATER
  */
- 
+
 define('BWP_FRAMEWORK_VERSION', '1.0.0');
 
 class BWP_FRAMEWORK {
@@ -233,7 +233,7 @@ class BWP_FRAMEWORK {
 	<a class="bwp-twitter" href="http://twitter.com/0dd0ne0ut"><?php _e('Follow me on Twitter!', $this->plugin_dkey); ?></a>
 </div>
 <?php
-		if (true == $ad_showable) 
+		if (true == $ad_showable)
 		{
 ?>
 <div class="bwp-separator">
@@ -268,7 +268,7 @@ class BWP_FRAMEWORK {
 		$this->build_options();
 		// Load libraries
 		$this->load_libraries();
-		// Add actions and filters		
+		// Add actions and filters
 		$this->add_hooks();
 		// Enqueue needed media, conditionally
 		add_action('init', array($this, 'enqueue_media'));
@@ -388,7 +388,7 @@ class BWP_FRAMEWORK {
 			return true;
 	}
 
-	function plugin_action_links($links, $file) 
+	function plugin_action_links($links, $file)
 	{
 		$option_script = (!$this->_menu_under_settings && !$this->_simple_menu) ? 'admin.php' : 'options-general.php';
 		$option_keys = array_values($this->option_keys);
