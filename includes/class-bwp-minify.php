@@ -82,7 +82,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 	/**
 	 * Constructor
-	 */	
+	 */
 	function __construct($version = '1.2.3')
 	{
 		// Plugin's title
@@ -1313,6 +1313,10 @@ if (!empty($page))
 	function print_inline_styles($handles)
 	{
 		global $wp_styles;
+
+		// this feature is only available on WP 3.3 or higher
+		if (version_compare($this->ver, '3.3', '<'))
+			return;
 
 		foreach ($handles as $handle)
 			$wp_styles->print_inline_style($handle);
