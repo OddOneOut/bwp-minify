@@ -568,9 +568,10 @@ if (!empty($page))
 			break;
 
 			case 'tver':
-				$theme = get_theme_data(STYLESHEETPATH . '/style.css');
-				if (!empty($theme['Version']))
-					$buster = $theme['Version'];
+				$theme = wp_get_theme();
+				$buster = $theme->get( 'Version' );
+			break;
+
 			break;
 
 			case 'custom':
