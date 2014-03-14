@@ -10,82 +10,92 @@ class BWP_FRAMEWORK {
 
 	/**
 	 * Database related data
-	 */	
+	 */
 	var $options = array();
 
 	/**
 	 * Default data
-	 */	
+	 */
 	var $options_default = array(), $site_options = array();
 
 	/**
 	 * Hold db option keys
-	 */	
+	 */
 	var $option_keys = array();
-	
+
 	/**
 	 * Hold extra option keys
-	 */	
+	 */
 	var $extra_option_keys = array();
 
 	/**
 	 * Hold old option pages
-	 */	
+	 */
 	var $option_pages = array();
 
 	/**
 	 * Key to identify plugin
-	 */	
+	 */
 	var $plugin_key;
 
 	/**
 	 * Constant Key to identify plugin
-	 */	
+	 */
 	var $plugin_ckey;
-	
+
 	/**
 	 * Domain Key to identify plugin
-	 */	
+	 */
 	var $plugin_dkey;
 
 	/**
 	 * Title of the plugin
-	 */	
+	 */
 	var $plugin_title;
 
 	/**
 	 * Homepage of the plugin
-	 */	
+	 */
 	var $plugin_url;
-	
+
 	/**
 	 * Plugin file
-	 */	
+	 */
 	var $plugin_file;
-	
+
+	/**
+	 * Plugin folder
+	 */
+	var $plugin_folder;
+
+	/**
+	 * Plugin WP url
+	 */
+	var $plugin_wp_url;
+
 	/**
 	 * Version of the plugin
-	 */	
+	 */
 	var $plugin_ver = '';
-	
+
 	/**
 	 * Message shown to user (Warning, Notes, etc.)
-	 */	
+	 */
 	var $notices = array(), $notice_shown = false;
-	
+
 	/**
 	 * Capabilities to manage this plugin
-	 */	
+	 */
 	var $plugin_cap = 'manage_options';
-	
+
 	/**
 	 * Whether or not to create filter for media paths
-	 */	
+	 */
 	var $need_media_filters;
-	
+
 	/**
 	 * Form tabs to build
-	 */	
+	 */
 	var $form_tabs = array();
 
 	/**
@@ -104,7 +114,7 @@ class BWP_FRAMEWORK {
 	 * Build base properties
 	 */
 	function build_properties($key, $dkey, $options, $plugin_title = '', $plugin_file = '', $plugin_url = '', $need_media_filters = true)
-	{		
+	{
 		$this->plugin_key = strtolower($key);
 		$this->plugin_ckey = strtoupper($key);
 		$this->plugin_dkey = $dkey;
@@ -114,8 +124,10 @@ class BWP_FRAMEWORK {
 		$this->options_default = $options;
 		$this->need_media_filters = (boolean) $need_media_filters;
 		$this->plugin_file = $plugin_file;
+		$this->plugin_folder = basename(dirname($plugin_file));
+		$this->plugin_wp_url = trailingslashit(plugins_url($this->plugin_folder));
 		// Load locale
-		load_plugin_textdomain($dkey, false, basename(dirname($plugin_file)) . '/languages');
+		load_plugin_textdomain($dkey, false, $this->plugin_folder . '/languages');
 	}
 
 	function add_option_key($key, $option, $title)
@@ -123,7 +135,7 @@ class BWP_FRAMEWORK {
 		$this->option_keys[$key] = $option;
 		$this->option_pages[$key] = $title;
 	}
-	
+
 	function add_extra_option_key($key, $option, $title)
 	{
 		$this->extra_option_keys[$key] = $option;
@@ -147,7 +159,7 @@ class BWP_FRAMEWORK {
 			break;
 		}
 	}
-	
+
 	function get_version($type = '')
 	{
 		switch ($type)
@@ -217,7 +229,7 @@ class BWP_FRAMEWORK {
 	<option value="100.00"><?php _e('... or any amount!', $this->plugin_dkey); ?></option>
 </select>
 <span class="paypal-alternate-input" style="display: none;"><!-- --></span>
-<input class="paypal-submit" type="image" src="<?php echo plugin_dir_url($this->plugin_file) . 'includes/bwp-option-page/images/icon-paypal.gif'; ?>" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!" />
+<input class="paypal-submit" type="image" src="<?php echo $this->plugin_wp_url . 'includes/bwp-option-page/images/icon-paypal.gif'; ?>" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!" />
 <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
 </p>
 </form>
@@ -243,7 +255,7 @@ class BWP_FRAMEWORK {
 	<p><strong><?php _e('This Plugin is Proudly Sponsored By', $this->plugin_dkey); ?></strong></p>
 	<div style="width: 250px; margin: 0 auto;">
 		<a href="http://managewp.com/?utm_source=<?php echo $this->plugin_key; ?>&amp;utm_medium=Banner&amp;utm_content=mwp250_2&amp;utm_campaign=Plugins">
-			<img src="<?php echo plugin_dir_url($this->plugin_file) . 'includes/bwp-option-page/images/ad_250x250.png'; ?>" />
+			<img src="<?php echo $this->plugin_wp_url . 'includes/bwp-option-page/images/ad_250x250.png'; ?>" />
 		</a>
 	</div>
 </div>
@@ -259,7 +271,7 @@ class BWP_FRAMEWORK {
 		if (empty($this->plugin_ver)) return '';
 		return '<a class="nav-tab version" title="' . sprintf(esc_attr(__('You are using version %s!', $this->plugin_dkey)), $this->plugin_ver) . '">' . $this->plugin_ver . '</a>';
 	}
-	
+
 	function init()
 	{
 		// Build constants
@@ -287,7 +299,7 @@ class BWP_FRAMEWORK {
 			add_action('bwp_option_action_before_form', array($this, 'show_donation'), 12);
 		}
 	}
-	
+
 	function add_cap($cap)
 	{
 		$this->plugin_cap = $cap;
@@ -296,22 +308,31 @@ class BWP_FRAMEWORK {
 	function build_constants()
 	{
 		define($this->plugin_ckey . '_PLUGIN_URL', $this->plugin_url);
-		// Path
+
 		if (true == $this->need_media_filters)
 		{
-			define($this->plugin_ckey . '_IMAGES', apply_filters($this->plugin_key . '_image_path', plugin_dir_url($this->plugin_file) . 'images'));
-			define($this->plugin_ckey . '_CSS', apply_filters($this->plugin_key . '_css_path', plugin_dir_url($this->plugin_file) . 'css'));
-			define($this->plugin_ckey . '_JS', apply_filters($this->plugin_key . '_js_path', plugin_dir_url($this->plugin_file) . 'js'));
+			define($this->plugin_ckey . '_IMAGES',
+				apply_filters($this->plugin_key . '_image_path',
+				$this->plugin_wp_url . 'images'));
+			define($this->plugin_ckey . '_CSS',
+				apply_filters($this->plugin_key . '_css_path',
+				$this->plugin_wp_url . 'css'));
+			define($this->plugin_ckey . '_JS',
+				apply_filters($this->plugin_key . '_js_path',
+				$this->plugin_wp_url . 'js'));
 		}
 		else
 		{
-			define($this->plugin_ckey . '_IMAGES', plugin_dir_url($this->plugin_file) . 'images');
-			define($this->plugin_ckey . '_CSS', plugin_dir_url($this->plugin_file) . 'css');
-			define($this->plugin_ckey . '_JS', plugin_dir_url($this->plugin_file) . 'js');			
+			define($this->plugin_ckey . '_IMAGES',
+				$this->plugin_wp_url . 'images');
+			define($this->plugin_ckey . '_CSS',
+				$this->plugin_wp_url . 'css');
+			define($this->plugin_ckey . '_JS',
+				$this->plugin_wp_url . 'js');
 		}
 		// Option page related
 		define($this->plugin_ckey . '_CAPABILITY', $this->plugin_cap); // the capability needed to configure this plugin
-		
+
 		foreach ($this->option_keys as $key => $option)
 		{
 			define(strtoupper($key), $option);
@@ -366,7 +387,7 @@ class BWP_FRAMEWORK {
 	{
 		/* intentionally left blank */
 	}
-	
+
 	function enqueue_media()
 	{
 		/* intentionally left blank */
@@ -381,7 +402,7 @@ class BWP_FRAMEWORK {
 	{
 		/* intentionally left blank */
 	}
-	
+
 	function is_admin_page()
 	{
 		if (is_admin() && !empty($_GET['page']) && (in_array($_GET['page'], $this->option_keys) || in_array($_GET['page'], $this->extra_option_keys)))
@@ -412,8 +433,8 @@ class BWP_FRAMEWORK {
 			if (!class_exists('BWP_OPTION_PAGE'))
 				require_once(dirname(__FILE__) . '/bwp-option-page/bwp-option-page.php');
 			// Enqueue style sheets and scripts for the option page
-			wp_enqueue_style('bwp-option-page',  plugin_dir_url($this->plugin_file) . 'includes/bwp-option-page/css/bwp-option-page.css', array(), '1.0.1');
-			wp_enqueue_script('bwp-paypal-js',  plugin_dir_url($this->plugin_file) . 'includes/bwp-option-page/js/paypal.js', array('jquery'));
+			wp_enqueue_style('bwp-option-page',  $this->plugin_wp_url . 'includes/bwp-option-page/css/bwp-option-page.css', array(), '1.0.1');
+			wp_enqueue_script('bwp-paypal-js',  $this->plugin_wp_url . 'includes/bwp-option-page/js/paypal.js', array('jquery'));
 		}
 
 		$this->build_menus();
@@ -426,7 +447,7 @@ class BWP_FRAMEWORK {
 	{
 		/* intentionally left blank */
 	}
-	
+
 	function build_tabs()
 	{
 		$option_script = (!$this->_menu_under_settings) ? 'admin.php' : 'options-general.php';
@@ -441,7 +462,7 @@ class BWP_FRAMEWORK {
 	 * Build the option pages
 	 *
 	 * Utilizes BWP Option Page Builder (@see BWP_OPTION_PAGE)
-	 */	
+	 */
 	function build_option_pages()
 	{
 		/* intentionally left blank */
@@ -455,7 +476,7 @@ class BWP_FRAMEWORK {
 			add_action('bwp_option_action_before_form', array($this, 'show_notices'));
 		}
 	}
-	
+
 	function show_notices()
 	{
 		if (false == $this->notice_shown)
@@ -467,14 +488,14 @@ class BWP_FRAMEWORK {
 			$this->notice_shown = true;
 		}
 	}
-	
+
 	function is_multisite()
 	{
 		if (function_exists('is_multisite') && is_multisite())
 			return true;
 		return false;
 	}
-	
+
 	function is_normal_admin()
 	{
 		if ($this->is_multisite() && !is_super_admin())
@@ -482,4 +503,3 @@ class BWP_FRAMEWORK {
 		return false;
 	}
 }
-?>

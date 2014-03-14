@@ -142,7 +142,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	{
 		// @since 1.3.0 we get a path relative to root for Minify instead of an
 		// absolute URL to add compatibility to staging or mirror site.
-		$plugin_dir_url = plugin_dir_url($this->plugin_file);
+		$plugin_dir_url = $this->plugin_wp_url;
 		$http_host = '';
 		$matches = array();
 
@@ -154,7 +154,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		{
 			$url = @parse_url($plugin_dir_url);
 			$http_host = $url['scheme'] . '://' . $url['host'];
-			$http_host = !empty($url['port']) ? $http_host . ':' . $url['port'] : $http_host;
+			$http_host = !empty($url['port'])
+				? $http_host . ':' . $url['port']
+				: $http_host;
 		}
 
 		$this->http_host = $http_host;
@@ -304,7 +306,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		$options = array();
 
 if (!empty($page))
-{	
+{
 	if ($page == BWP_MINIFY_OPTION_GENERAL)
 	{
 		$form = array(
@@ -350,7 +352,7 @@ if (!empty($page))
 			'checkbox'	=> array(
 				'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_js'),
 				'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_css'),
-				'cb2' => array(__('most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo')
+				'cb2' => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo')
 			),
 			'input'	=> array(
 				'input_minpath' => array('size' => 55, 'disabled' => ' readonly="readonly"', 'label' => sprintf(__('This should be set automatically. Please read <a href="%s#customization">here</a> to know how to properly modify this.', 'bwp-minify'), $this->plugin_url)),
@@ -434,7 +436,9 @@ if (!empty($page))
 		}
 
 		// Guessing the cache directory
-		$options['input_cache_dir'] = (empty($options['input_cache_dir'])) ? $this->get_cache_dir($options['input_minpath']) : $options['input_cache_dir'];
+		$options['input_cache_dir'] = empty($options['input_cache_dir'])
+			? $this->get_cache_dir($options['input_minpath'])
+			: $options['input_cache_dir'];
 
 		// [WPMS Compatible]
 		if ($this->is_normal_admin())
@@ -446,8 +450,16 @@ if (!empty($page))
 		if ('custom' == $options['select_buster_type'])
 			unset($form['input']['input_custom_buster']['disabled']);
 
-		if (!file_exists($options['input_cache_dir']) || !is_writable($options['input_cache_dir']))
-			$this->add_notice('<strong>' . __('Warning') . ':</strong> ' . __("Cache directory does not exist or is not writable. Please try CHMOD your cache directory to 755. If you still see this warning, CHMOD to 777.", 'bwp-minify'));
+		if (!file_exists($options['input_cache_dir'])
+			|| !is_writable($options['input_cache_dir'])
+		) {
+			$this->add_notice(
+				'<strong>' . __('Warning') . ':</strong> '
+				. __("Cache directory does not exist or is not writable. "
+					. "Please try CHMOD your cache directory to 755. "
+					. "If you still see this warning, CHMOD to 777.", 'bwp-minify')
+			);
+		}
 
 ?>
 	<script type="text/javascript">
@@ -467,19 +479,30 @@ if (!empty($page))
 	}
 
 	/**
-	 * FIXME
+	 * Gets (guess) the current cache directory based on min path
 	 *
+	 * The default cache directory is /min/cache/ which can be changed inside
+	 * admin area if /min/config.php file is writable (@since 1.3.0).
 	 */
 	function get_cache_dir($min_path = '')
 	{
 		global $current_blog;
 
-		$guess_cache = empty($min_path) ? $this->options['input_minpath'] : $min_path;
+		$guess_cache = empty($min_path)
+			? $this->options['input_minpath']
+			: $min_path;
 
 		// @since 1.0.1
-		$multisite_path = (isset($current_blog->path) && '/' != $current_blog->path) ? $current_blog->path : '';
+		$multisite_path = isset($current_blog->path)
+			&& '/' != $current_blog->path
+			? $current_blog->path
+			: '';
+
+		$guess_cache = ltrim($guess_cache, '/');
 		$guess_cache = str_replace($multisite_path, '', dirname($guess_cache));
-		$guess_cache = trailingslashit($_SERVER['DOCUMENT_ROOT']) . trailingslashit($guess_cache) . 'cache/';
+		$guess_cache = trailingslashit($_SERVER['DOCUMENT_ROOT'])
+			. trailingslashit($guess_cache)
+			. 'cache/';
 
 		return apply_filters('bwp_minify_cache_dir', str_replace('\\', '/', $guess_cache));
 	}
@@ -528,16 +551,17 @@ if (!empty($page))
 	}
 
 	/**
-	 * Sets the base used to prepend all sources when building the Minify string
+	 * Sets a base to prepend relative media sources
 	 *
 	 * The base is deduced from siteurl (the folder where actual WordPress
-	 * files are located.) As of 1.3.0 more scenarios are considered when
-	 * finding the base, including: FIXME
+	 * files are located.), so if WP files are located in /blog instead of
+	 * root, the base would be `blog`.
 	 *
 	 * @return void
 	 */
 	function get_base()
 	{
+		// TODO: check multi-site compatibility
 		$temp = @parse_url(get_site_option('siteurl'));
 
 		$port = (!empty($temp['port'])) ? ':' . $temp['port'] : '';
@@ -685,9 +709,7 @@ if (!empty($page))
 	}
 
 	/**
-	 * Makes sure the media file is in expected format before added to Minify string
-	 *
-	 * FIXME
+	 * Formats media source before adding to Minify string
 	 *
 	 * @return string
 	 */
@@ -705,40 +727,28 @@ if (!empty($page))
 		{
 			// handle both http and https, can't assume $src is properly setup
 			// with appropriate scheme
-			$site_url = site_url();
+			$site_url = $this->http_host;
 			if (0 <> strncmp($site_url, $src, 5)) {
 				// site_url and $src don't share the same scheme, wonder how?
 				$site_url = 0 === strpos($site_url, 'https')
 					? str_replace('https:', 'http:', $site_url)
 					: str_replace('http:', 'https:', $site_url);
 			}
-			$tmp_src = str_replace($site_url, '', $src);
-
-			// If there was no difference between tmp_src and src, we need to loop through the base
-			if ($tmp_src == $src && !empty($this->base))
-			{
-				$base_cpns = explode('/', preg_replace('#[/]+#i', '/', $this->base));
-				array_pop($base_cpns);
-
-				foreach ($base_cpns as $key => $cpn)
-				{
-					$cpn_path = '/' . $cpn;
-					for ($i = 0; $i < $key; $i++)
-						$cpn_path = '/' . $base_cpns[$i] . $cpn_path;
-					$cpn_url = 'http://' . $_SERVER['HTTP_HOST'] . $cpn_path;
-					$src = str_replace(array($cpn_url, str_replace('http://', 'https://', $cpn_url)), '', $src);
-				}
-
-				$src = $cpn_path . $src;
-			}
-			else
-				$src = $this->base . $tmp_src;
+			$src = str_replace($site_url, '', $src);
 		}
 		else if ('/' === substr($src, 0, 1)) {
 			// root relative url
-			if (false !== strpos($src, 'wp-includes') || false !== strpos($src, 'wp-admin'))
-				// Add base for wp-includes and wp-admin directory
+			if (false !== strpos($src, 'wp-includes')
+				|| false !== strpos($src, 'wp-admin')
+				|| (false !== strpos($src, 'wp-content')
+					&& false !== strpos('/' . $this->base . '/', content_url()))
+			) {
+				// Add base for relative media source. Because `wp_content`
+				// folder can be moved away from where WordPress's files are
+				// located, only add a base before `wp-content` if it is
+				// expected.
 				$src = $this->base . $src;
+			}
 		}
 
 		// @since 1.0.3
@@ -787,7 +797,7 @@ if (!empty($page))
 					. esc_url($string)
 					. "'></script>\n";
 			break;
-			
+
 			case 'style':
 				$return = "<link rel='stylesheet' id='"
 					. $group_handle . "-group-css' href='"
@@ -928,7 +938,7 @@ if (!empty($page))
 	 * 2. A WP Minify group: files are minified but separately printed
 	 * 3. A WP group: files are NOT minified and separately printed
 	 *
-	 * Only apply to a Minify group: If the number of files per group reaches a
+	 * Apply to a Minify group: If the number of files per group reaches a
 	 * limit (by default the limit is 10) this plugin will split the minify
 	 * string into an appropriate number of <link> tags. On some server if the
 	 * minify string is too long it could trigger a 500 Internal Server error.
@@ -1375,10 +1385,20 @@ if (!empty($page))
 			{
 				if ($todo_script['depend'])
 				{
+					// script's src is empty/invalid but it has dependencies so 
+					// it's probably a dummy script used to load other scripts
 					$this->todo_scripts[$handle] = $todo_script;
 					$wp_scripts->done[] = $handle;
 				}
 				continue;
+			}
+
+			if ('jquery-migrate' == $handle) {
+				// jquery-migrate and jquery-core might get separated so we
+				// force jquery-migrate to have jquery-core as its dependecy
+				$todo_script['depend'] = false == $todo_script['depend']
+					? array() : $todo_script['depend'];
+				$todo_script['depend'][] = 'jquery-core';
 			}
 
 			// if this script is registered in footer, or it is registered
