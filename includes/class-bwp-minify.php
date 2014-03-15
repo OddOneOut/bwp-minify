@@ -125,8 +125,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			'BetterWP Minify', dirname(dirname(__FILE__)) . '/bwp-minify.php',
 			'http://betterwp.net/wordpress-plugins/bwp-minify/', false
 		);
-		$this->add_option_key('BWP_MINIFY_OPTION_GENERAL','bwp_minify_general',
-			__('Better WordPress Minify Settings', 'bwp-minify')
+		$this->add_option_key('BWP_MINIFY_OPTION_GENERAL', 'bwp_minify_general',
+			__('General Options', 'bwp-minify')
+		);
+		$this->add_extra_option_key('BWP_MINIFY_MANAGE', 'bwp_minify_manage',
+			__('Manage enqueued Files', 'bwp-minify')
 		);
 
 		add_action('init', array($this, 'default_minpath'));
@@ -279,14 +282,35 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 	/**
 	 * Build the Menus
+	 * TODO: simple menu version?
 	 */
 	function build_menus()
 	{
-		add_options_page(
-			__( 'Better WordPress Minify', 'bwp-minify'), 'BWP Minify',
-			BWP_MINIFY_CAPABILITY, BWP_MINIFY_OPTION_GENERAL, array(
-			$this, 'build_option_pages'
-		));
+		add_menu_page(
+			__('Better WordPress Minify', 'bwp-minify'),
+			'BWP Minify',
+			BWP_MINIFY_CAPABILITY,
+			BWP_MINIFY_OPTION_GENERAL,
+			array($this, 'build_option_pages'),
+			BWP_MINIFY_IMAGES . '/icon_menu.png'
+		);
+		// Sub menus
+		add_submenu_page(
+			BWP_MINIFY_OPTION_GENERAL,
+			__('General Options', 'bwp-minify'),
+			__('General Options', 'bwp-minify'),
+			BWP_MINIFY_CAPABILITY,
+			BWP_MINIFY_OPTION_GENERAL,
+			array($this, 'build_option_pages')
+		);
+		add_submenu_page(
+			BWP_MINIFY_OPTION_GENERAL,
+			__('Manage enqueued Files', 'bwp-minify'),
+			__('Enqueued Files', 'bwp-minify'),
+			BWP_MINIFY_CAPABILITY,
+			BWP_MINIFY_MANAGE,
+			array($this, 'build_option_pages')
+		);
 	}
 
 	/**
@@ -309,30 +333,73 @@ if (!empty($page))
 {
 	if ($page == BWP_MINIFY_OPTION_GENERAL)
 	{
+		$bwp_option_page->set_current_tab(1);
+
 		$form = array(
-			'items'			=> array('heading', 'checkbox', 'checkbox', 'checkbox', 'heading', 'input', 'input', 'input', 'select', 'heading', 'textarea', 'textarea', 'textarea', 'textarea'),
+			'items'			=> array(
+				'heading',
+				'checkbox',
+				'checkbox',
+				'checkbox',
+				'input',
+				'input',
+				'select',
+				'heading',
+				'input',
+				'heading',
+				'textarea',
+				'textarea',
+				'textarea',
+				'textarea'
+			),
 			'item_labels'	=> array
 			(
-				__('General Options', 'bwp-minify'),
+				__('Plugin Functionality', 'bwp-minify'),
 				__('Minify JS files automatically?', 'bwp-minify'),
 				__('Minify CSS files automatically?', 'bwp-minify'),
 				__('Minify <code>bloginfo()</code> stylesheets?', 'bwp-minify'),
-				__('Minifying Options', 'bwp-minify'),
 				__('Minify Path (double-click to edit)', 'bwp-minify'),
-				__('Cache directory (double-click to edit)', 'bwp-minify'),
 				__('One minify string will contain', 'bwp-minify'),
 				__('Append the minify string with', 'bwp-minify'),
+				__('Minify Library Options', 'bwp-minify'),
+				__('Cache directory (double-click to edit)', 'bwp-minify'),
 				__('Minifying Scripts Options', 'bwp-minify'),
 				__('Scripts to be minified in header', 'bwp-minify'),
 				__('Scripts to be minified in footer', 'bwp-minify'),
 				__('Scripts to be minified and then printed separately', 'bwp-minify'),
 				__('Scripts to be ignored (not minified)', 'bwp-minify')
 			),
-			'item_names'	=> array('h1', 'cb1', 'cb3', 'cb2', 'h2', 'input_minpath', 'input_cache_dir', 'input_maxfiles', 'select_buster_type', 'h3', 'input_header', 'input_footer', 'input_direct', 'input_ignore'),
+			'item_names'	=> array(
+				'h1',
+				'cb1',
+				'cb3',
+				'cb2',
+				'input_minpath',
+				'input_maxfiles',
+				'select_buster_type',
+				'h2',
+				'input_cache_dir',
+				'h3',
+				'input_header',
+				'input_footer',
+				'input_direct',
+				'input_ignore'
+			),
 			'heading'			=> array(
 				'h1'	=> '',
-				'h2'	=> __('<em>Options that affect both your stylesheets and scripts.</em>', 'bwp-minify'),
-				'h3'	=> sprintf(__('<em>You can force the position of each script using those inputs below (e.g. you have a script registered in the header but you want to minify it in the footer instead). If you are still unsure, please read more <a href="%s#positioning-your-scripts">here</a>. Type in one script handle (<strong>NOT filename</strong>) per line.</em>', 'bwp-minify'), $this->plugin_url)
+				'h2'	=> sprintf(
+					__('<em>These options will let you control how the actual ' .
+					'<a href="%s" target="_blank">Minify</a> library works.</em>', 'bwp-minify'),
+					'https://code.google.com/p/minify/'
+				),
+				'h3'	=> sprintf(
+					__('<em> You can force the position of each script using those inputs
+					below (e.g. you have a script registered in the header but you
+					want to minify it in the footer instead). If you are still
+					unsure, please read more <a href="%s#positioning-your-scripts">here</a>.
+					Type in one script handle (<strong>NOT filename</strong>) per line </em>', 'bwp-minify'),
+					$this->plugin_url
+				)
 			),
 			'select' => array(
 				'select_time_type' => array(
