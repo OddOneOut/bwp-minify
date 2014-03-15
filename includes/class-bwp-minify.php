@@ -741,7 +741,7 @@ if (!empty($page))
 			if (false !== strpos($src, 'wp-includes')
 				|| false !== strpos($src, 'wp-admin')
 				|| (false !== strpos($src, 'wp-content')
-					&& false !== strpos('/' . $this->base . '/', content_url()))
+					&& false !== strpos(content_url(), '/' . $this->base . '/'))
 			) {
 				// Add base for relative media source. Because `wp_content`
 				// folder can be moved away from where WordPress's files are
