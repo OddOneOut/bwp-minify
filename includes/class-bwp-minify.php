@@ -42,9 +42,9 @@ if (!class_exists('BWP_FRAMEWORK'))
 class BWP_MINIFY extends BWP_FRAMEWORK
 {
 	/**
-	 * Positions to put scripts in
+	 * Positions to put scripts/styles in
 	 */
-	var $print_positions = array('header' => array(), 'footer' => array(), 'direct' => array(), 'ignore' => array());
+	var $print_positions = array();
 
 	/**
 	 * Internal _Todo_ lists
@@ -71,14 +71,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	/**
 	 * Other options
 	 */
-	var $ver = '', $base = '', $cache_time = 1800, $buster = '';
+	var $ver = '', $base = '', $buster = '', $cache_age = 7200;
 
 	/**
 	 * Holds the extracted HTTP Host
 	 *
 	 * @since 1.3.0
 	 */
-	var $http_host = '', $min_url = '';
+	var $http_host = '', $min_url = '', $min_dir = '';
 
 	/**
 	 * Constructor
@@ -98,28 +98,37 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		$options = array(
 			'input_minurl' => '', // @deprecated 1.3.0 replaced by input_minpath
 			'input_minpath' => '',
-			'input_cache_dir' => '',
+			'input_cache_dir' => '', // super admin, Minify
+			'input_doc_root' => '', // @since 1.3.0 super admin, Minify
 			'input_maxfiles' => 10,
-			'input_maxage' => 30,
+			'input_maxage' => 2, // super admin, Minify
 			'input_ignore' => 'admin-bar',
 			'input_header' => '',
 			'input_direct' => '',
 			'input_footer' => '',
+			'input_oblivion' => '',
+			'input_style_ignore' => 'admin-bar' . "\n" . 'dashicons',
+			'input_style_direct' => '',
+			'input_style_oblivion' => '',
 			'input_custom_buster' => '',
 			'enable_min_js' => 'yes',
 			'enable_min_css' => 'yes',
 			'enable_bloginfo' => '',
-			'enable_late_scripts' => 'yes', // @since 1.3.0
+			'enable_css_bubble' => 'yes', // @since 1.3.0 super admin, Minify
+			'enable_cache_file_lock' => 'yes', // @since 1.3.0 super admin, Minify
 			'select_buster_type' => 'none',
-			'select_time_type' => 60
+			'select_time_type' => 3600 // super admin, Minify
 		);
 
-		/*
-		 * Super admin only options.
-		 * Right now a single cache directory is used for all sites under
-		 * a network, this behaviour is expected to be changed in v2.x
-		 */
-		$this->site_options = array('input_cache_dir');
+		// super admin only options
+		$this->site_options = array(
+			'input_cache_dir',
+			'input_doc_root',
+			'input_maxage',
+			'enable_css_bubble',
+			'enable_cache_file_lock',
+			'select_time_type'
+		);
 
 		$this->build_properties('BWP_MINIFY', 'bwp-minify', $options,
 			'BetterWP Minify', dirname(dirname(__FILE__)) . '/bwp-minify.php',
@@ -132,8 +141,29 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			__('Manage enqueued Files', 'bwp-minify')
 		);
 
+		// define hidden option keys
+		define('BWP_MINIFY_DETECTOR_LOG', 'bwp_minify_detector_log');
+
+		// backward compatible with older frameword version,
+		// `plugin_wp_url` is only available since framework version 1.1.0
+		if (version_compare(BWP_FRAMEWORK_VERSION, '1.1.0', '<'))
+		{
+			$this->plugin_folder = basename(dirname($this->plugin_file));
+			add_action('init', array($this, 'set_plugin_wp_url'));
+		}
+
 		add_action('init', array($this, 'default_minpath'));
 		add_action('init', array($this, 'init'));
+		add_action('init', array($this, 'enqueue_media'));
+		add_action('upgrader_process_complete', array($this, 'check_minify_config_file'), 10, 2);
+	}
+
+	function set_plugin_wp_url()
+	{
+		if (defined('BWP_USE_SYMLINKS'))
+			$this->plugin_wp_url = trailingslashit(plugins_url($this->plugin_folder));
+		else
+			$this->plugin_wp_url = trailingslashit(plugin_dir_url($this->plugin_file));
 	}
 
 	/**
@@ -145,17 +175,18 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	{
 		// @since 1.3.0 we get a path relative to root for Minify instead of an
 		// absolute URL to add compatibility to staging or mirror site.
-		$plugin_dir_url = $this->plugin_wp_url;
+		$plugin_wp_url = $this->plugin_wp_url;
+
 		$http_host = '';
 		$matches = array();
 
-		if (false !== preg_match('#^https?://[^/]+#ui', $plugin_dir_url, $matches))
+		if (false !== preg_match('#^https?://[^/]+#ui', $plugin_wp_url, $matches))
 		{
 			$http_host = $matches[0];
 		}
 		else
 		{
-			$url = @parse_url($plugin_dir_url);
+			$url = @parse_url($plugin_wp_url);
 			$http_host = $url['scheme'] . '://' . $url['host'];
 			$http_host = !empty($url['port'])
 				? $http_host . ':' . $url['port']
@@ -163,10 +194,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		}
 
 		$this->http_host = $http_host;
-		$min_dir = str_replace($http_host, '', $plugin_dir_url);
+		$min_path = str_replace($http_host, '', $plugin_wp_url);
+		$min_path = apply_filters('bwp_minify_min_dir', $min_path . 'min/');
 
 		$this->options_default['input_minpath'] = apply_filters(
-			'bwp_minify_min_dir', $min_dir . 'min/'
+			'bwp_minify_min_path', $min_path
 		);
 	}
 
@@ -175,12 +207,18 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		$this->get_base();
 		$this->parse_positions();
 		$this->ver = get_bloginfo('version');
-		$this->cache = (int) $this->options['input_maxage'] * (int) $this->options['select_time_type'];
+
 		$this->options['input_cache_dir'] = empty($this->options['input_cache_dir'])
-											? $this->get_cache_dir()
-											: $this->options['input_cache_dir'];
+			? $this->get_cache_dir()
+			: $this->options['input_cache_dir'];
+
 		$this->buster = $this->get_buster($this->options['select_buster_type']);
 		$this->min_url  = trailingslashit($this->http_host) . ltrim($this->options['input_minpath'], '/');
+
+		// load and init the detector class
+		require_once dirname(__FILE__) . '/class-bwp-enqueued-detector.php';
+		$this->detector = new BWP_Enqueued_Detector($this->options, 'bwp-minify');
+		$this->detector->set_log(BWP_MINIFY_DETECTOR_LOG);
 	}
 
 	private static function is_loadable()
@@ -241,7 +279,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				add_action('wp_print_styles', array($this, 'add_late_styles'), 999);
 				// hook to common head and footer actions, as late as possible
 				add_action('wp_head', array($this, 'print_header_styles'), 9);
-				add_action('wp_print_footer_scripts', array($this, 'print_footer_styles'), 21);
 				add_action('login_head', array($this, 'print_header_styles'), 9);
 				add_action('wp_print_footer_scripts', array($this, 'print_footer_styles'), 21);
 				add_action('admin_print_styles', array($this, 'print_header_styles'), 9);
@@ -256,7 +293,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				add_action('wp_print_scripts', array($this, 'add_late_scripts'), 999);
 				// hook to common head and footer actions, as late as possible
 				add_action('wp_head', array($this, 'print_header_scripts'), 10);
-				add_action('wp_print_footer_scripts', array($this, 'print_footer_scripts'), 21);
 				add_action('login_head', array($this, 'print_header_scripts'), 10);
 				add_action('wp_print_footer_scripts', array($this, 'print_footer_scripts'), 21);
 				add_action('admin_print_scripts', array($this, 'print_header_scripts'), 10);
@@ -280,19 +316,34 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			$this->add_conditional_hooks();
 	}
 
+	function enqueue_media()
+	{
+		if ($this->is_admin_page())
+		{
+			wp_enqueue_script('bwp-minify', BWP_MINIFY_JS . '/bwp-minify.js',
+				array('jquery'), false, true);
+			wp_enqueue_style('bwp-minify', BWP_MINIFY_CSS . '/bwp-minify.css');
+		}
+	}
+
 	/**
 	 * Build the Menus
 	 * TODO: simple menu version?
 	 */
 	function build_menus()
 	{
+		// use fancy dashicons if WP version is 3.8+
+		$menu_icon = version_compare($this->ver, '3.8.0', '>=')
+			? 'dashicons-performance'
+			: BWP_MINIFY_IMAGES . '/icon_menu.png';
+
 		add_menu_page(
 			__('Better WordPress Minify', 'bwp-minify'),
 			'BWP Minify',
 			BWP_MINIFY_CAPABILITY,
 			BWP_MINIFY_OPTION_GENERAL,
 			array($this, 'build_option_pages'),
-			BWP_MINIFY_IMAGES . '/icon_menu.png'
+			$menu_icon
 		);
 		// Sub menus
 		add_submenu_page(
@@ -327,156 +378,303 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		$page = $_GET['page'];
 		$bwp_option_page = new BWP_OPTION_PAGE($page, $this->site_options);
 
-		$options = array();
-
-if (!empty($page))
-{
-	if ($page == BWP_MINIFY_OPTION_GENERAL)
-	{
-		$bwp_option_page->set_current_tab(1);
-
-		$form = array(
-			'items'			=> array(
-				'heading',
-				'checkbox',
-				'checkbox',
-				'checkbox',
-				'input',
-				'input',
-				'select',
-				'heading',
-				'input',
-				'heading',
-				'textarea',
-				'textarea',
-				'textarea',
-				'textarea'
-			),
-			'item_labels'	=> array
-			(
-				__('Plugin Functionality', 'bwp-minify'),
-				__('Minify JS files automatically?', 'bwp-minify'),
-				__('Minify CSS files automatically?', 'bwp-minify'),
-				__('Minify <code>bloginfo()</code> stylesheets?', 'bwp-minify'),
-				__('Minify Path (double-click to edit)', 'bwp-minify'),
-				__('One minify string will contain', 'bwp-minify'),
-				__('Append the minify string with', 'bwp-minify'),
-				__('Minify Library Options', 'bwp-minify'),
-				__('Cache directory (double-click to edit)', 'bwp-minify'),
-				__('Minifying Scripts Options', 'bwp-minify'),
-				__('Scripts to be minified in header', 'bwp-minify'),
-				__('Scripts to be minified in footer', 'bwp-minify'),
-				__('Scripts to be minified and then printed separately', 'bwp-minify'),
-				__('Scripts to be ignored (not minified)', 'bwp-minify')
-			),
-			'item_names'	=> array(
-				'h1',
-				'cb1',
-				'cb3',
-				'cb2',
-				'input_minpath',
-				'input_maxfiles',
-				'select_buster_type',
-				'h2',
-				'input_cache_dir',
-				'h3',
-				'input_header',
-				'input_footer',
-				'input_direct',
-				'input_ignore'
-			),
-			'heading'			=> array(
-				'h1'	=> '',
-				'h2'	=> sprintf(
-					__('<em>These options will let you control how the actual ' .
-					'<a href="%s" target="_blank">Minify</a> library works.</em>', 'bwp-minify'),
-					'https://code.google.com/p/minify/'
-				),
-				'h3'	=> sprintf(
-					__('<em> You can force the position of each script using those inputs
-					below (e.g. you have a script registered in the header but you
-					want to minify it in the footer instead). If you are still
-					unsure, please read more <a href="%s#positioning-your-scripts">here</a>.
-					Type in one script handle (<strong>NOT filename</strong>) per line </em>', 'bwp-minify'),
-					$this->plugin_url
-				)
-			),
-			'select' => array(
-				'select_time_type' => array(
-					__('second(s)', 'bwp-minify') => 1,
-					__('minute(s)', 'bwp-minify') => 60,
-					__('hour(s)', 'bwp-minify') => 3600,
-					__('day(s)', 'bwp-minify') => 86400
-				),
-				'select_buster_type' => array(
-					__('Do not append anything', 'bwp-minify') => 'none',
-					__('Cache folder&#8217;s last modified time', 'bwp-minify') => 'mtime',
-					__('Your WordPress&#8217;s current version', 'bwp-minify') => 'wpver',
-					__('Your theme&#8217;s current version', 'bwp-minify') => 'tver',
-					__('A custom number', 'bwp-minify') => 'custom'
-				)
-			),
-			'checkbox'	=> array(
-				'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_js'),
-				'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_css'),
-				'cb2' => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo')
-			),
-			'input'	=> array(
-				'input_minpath' => array('size' => 55, 'disabled' => ' readonly="readonly"', 'label' => sprintf(__('This should be set automatically. Please read <a href="%s#customization">here</a> to know how to properly modify this.', 'bwp-minify'), $this->plugin_url)),
-				'input_cache_dir' => array('size' => 55, 'disabled' => ' readonly="readonly"', 'label' => '<br />' . sprintf(__('<strong>Important</strong>: Changing cache directory is a two-step process, which is described in details <a href="%s#advanced_customization" target="_blank">here</a>. Please note that cache directory must be writable (i.e. CHMOD to 755 or 777).', 'bwp-minify'), $this->plugin_url)),
-				'input_maxfiles' => array('size' => 3, 'label' => __('file(s) at most.', 'bwp-minify')),
-				'input_maxage' => array('size' => 5, 'label' => __('&mdash;', 'bwp-minify')),
-				'input_custom_buster' => array('pre' => __('<em>&rarr; /min/?f=file.js&#038;ver=</em> ', 'bwp-minify'), 'size' => 12, 'label' => '.', 'disabled' => ' disabled="disabled"')
-			),
-			'textarea' => array
-			(
-				'input_header' => array('cols' => 40, 'rows' => 3),
-				'input_footer' => array('cols' => 40, 'rows' => 3),
-				'input_direct' => array('cols' => 40, 'rows' => 3),
-				'input_ignore' => array('cols' => 40, 'rows' => 3)
-			),
-			'container'	=> array(
-				'select_buster_type' => __('<em><strong>Note:</strong> When you append one of the things above you are basically telling browsers to clear their cached version of your CSS and JS files, which is very useful when you change source files. Use this feature wisely :).</em>', 'bwp-minify')
-			),
-			'inline_fields' => array(
-				'input_maxage' => array('select_time_type' => 'select'),
-				'select_buster_type' => array('input_custom_buster' => 'input')
-			),
-			'inline' => array(
-				'input_cache_dir' => '<br /><br /><input type="submit" class="button-secondary action" name="flush_cache" value="' . __('Flush the cache', 'bwp-minify') . '" />'
-			)
+		// Get option from the database, these options are used for both admin pages
+		$options = $bwp_option_page->get_db_options(
+			BWP_MINIFY_OPTION_GENERAL,
+			$this->options
 		);
 
-		// Get the default options
-		$options = $bwp_option_page->get_options(array('input_minpath', 'input_cache_dir', 'input_maxfiles', 'input_header', 'input_footer', 'input_direct', 'input_ignore', 'input_custom_buster', 'select_buster_type', 'enable_min_js', 'enable_min_css', 'enable_bloginfo'), $this->options);
 
-		// Get option from the database
-		$options = $bwp_option_page->get_db_options($page, $options);
-
-		$option_formats = array('input_maxfiles' => 'int', 'input_maxage' => 'int', 'select_time_type' => 'int');
-		$option_super_admin = $this->site_options;
-	}
-}
-
-		// Flush the cache
-		if (isset($_POST['flush_cache']) && !$this->is_normal_admin())
+		if (!empty($page))
 		{
-			check_admin_referer($page);
-			if ($deleted = self::flush_cache($options['input_cache_dir']))
-				$this->add_notice('<strong>' . __('Notice', 'bwp-minify') . ':</strong> ' . sprintf(__("<strong>%d</strong> cached files have been deleted successfully!", 'bwp-minify'), $deleted));
-			else
-				$this->add_notice('<strong>' . __('Notice', 'bwp-minify') . ':</strong> ' . __("Could not delete any cached files. Please manually check the cache directory.", 'bwp-minify'));
+			if ($page == BWP_MINIFY_OPTION_GENERAL)
+			{
+				$bwp_option_page->set_current_tab(1);
+
+				$form = array(
+					'items' => array(
+						'heading',
+						'checkbox',
+						'checkbox',
+						'checkbox',
+						'input',
+						'input',
+						'select',
+						'heading',
+						'input',
+						'input',
+						'input',
+						'checkbox',
+						'checkbox'
+					),
+					'item_labels' => array
+					(
+						__('Plugin Functionality', 'bwp-minify'),
+						__('Minify JS files automatically?', 'bwp-minify'),
+						__('Minify CSS files automatically?', 'bwp-minify'),
+						__('Minify <code>bloginfo()</code> stylesheets?', 'bwp-minify'),
+						__('Minify Path', 'bwp-minify'),
+						__('One minify string will contain', 'bwp-minify'),
+						__('Append the minify string with', 'bwp-minify'),
+						__('Minify Library Settings', 'bwp-minify'),
+						__('Document root', 'bwp-minify'),
+						__('Cache directory', 'bwp-minify'),
+						__('Cache age', 'bwp-minify'),
+						__('Enable bubble CSS import?', 'bwp-minify'),
+						__('Enable cache file locking?', 'bwp-minify')
+					),
+					'item_names' => array(
+						'h1',
+						'cb1',
+						'cb3',
+						'cb2',
+						'input_minpath',
+						'input_maxfiles',
+						'select_buster_type',
+						'h2',
+						'input_doc_root',
+						'input_cache_dir',
+						'input_maxage',
+						'cb4',
+						'cb5'
+					),
+					'heading' => array(
+						'h1' => '',
+						'h2' => '<a name="minify.config.php"></a>' . sprintf(
+							__('<em>These options will let you control how the actual '
+							. '<a href="%s" target="_blank">Minify</a> library works.</em>', 'bwp-minify'),
+							'https://code.google.com/p/minify/'
+						)
+					),
+					'select' => array(
+						'select_time_type' => array(
+							__('second(s)', 'bwp-minify') => 1,
+							__('minute(s)', 'bwp-minify') => 60,
+							__('hour(s)', 'bwp-minify') => 3600,
+							__('day(s)', 'bwp-minify') => 86400
+						),
+						'select_buster_type' => array(
+							__('Do not append anything', 'bwp-minify') => 'none',
+							__('Cache folder&#8217;s last modified time', 'bwp-minify') => 'mtime',
+							__('Your WordPress&#8217;s current version', 'bwp-minify') => 'wpver',
+							__('Your theme&#8217;s current version', 'bwp-minify') => 'tver',
+							__('A custom number', 'bwp-minify') => 'custom'
+						)
+					),
+					'checkbox' => array(
+						'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_js'),
+						'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_css'),
+						'cb2' => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo'),
+						'cb4' => array(sprintf(__('move all <code>@import</code> rules in CSS files to the top. More info <a href="%s" target="_blank">here</a>.', 'bwp-minify'), 'http://code.google.com/p/minify/wiki/CommonProblems#@imports_can_appear_in_invalid_locations_in_combined_CSS_files') => 'enable_css_bubble'),
+						'cb5' => array(__('disable this if filesystem is NFS.', 'bwp-minify') => 'enable_cache_file_lock'),
+					),
+					'input' => array(
+						'input_minpath' => array(
+							'size' => 55,
+							'label' => sprintf(
+								__('This should be set automatically. '
+								. 'Please read <a href="%s#customization">here</a> '
+								. 'to know how to properly modify this.', 'bwp-minify'),
+								$this->plugin_url)
+						),
+						'input_doc_root' => array(
+							'size' => 55,
+							'label' => '<br />' . __('Leave empty '
+								. 'to use PHP\'s <code>$_SERVER[\'DOCUMENT_ROOT\']</code>. '
+								. 'On some servers the document root is '
+								. 'misconfigured or missing, in that case you must '
+								. 'set this to your full document root directory '
+								. 'with NO trailing slash.', 'bwp-minify')
+						),
+						'input_cache_dir' => array(
+							'size' => 55,
+							'label' => '<br />' . sprintf(
+								__('Expect a full path to your desired cache directory. '
+								. 'More details can be found '
+								. '<a href="%s#advanced_customization" target="_blank">here</a>. '
+								. 'Cache directory must be writable '
+								. '(i.e. CHMOD to 755 or 777).', 'bwp-minify'),
+								$this->plugin_url)
+						),
+						'input_maxfiles' => array(
+							'size' => 3,
+							'label' => __('file(s) at most.', 'bwp-minify')
+						),
+						'input_maxage' => array(
+							'size' => 5,
+							'label' => __('&mdash;', 'bwp-minify')
+						),
+						'input_custom_buster' => array(
+							'pre' => '<em>&rarr; /min/?f=file.js&#038;ver=</em> ',
+							'size' => 12,
+							'label' => '.',
+							'disabled' => ' disabled="disabled"'
+						)
+					),
+					'container' => array(
+						'select_buster_type' => __(
+							'<em><strong>Note:</strong> '
+							. 'When you append one of the things above '
+							. 'you are basically telling browsers '
+							. 'to clear their cached version of your CSS and JS files, '
+							. 'which is very useful when you change source files. '
+							. 'Use this feature wisely :).</em>', 'bwp-minify')
+					),
+					'inline_fields' => array(
+						'input_maxage' => array(
+							'select_time_type' => 'select'
+						),
+						'select_buster_type' => array(
+							'input_custom_buster' => 'input'
+						)
+					),
+					'inline' => array(
+						'input_cache_dir' => '<br /><br /><input type="submit" '
+							. 'class="button-secondary action" name="flush_cache" '
+							. 'value="' . __('Flush the cache', 'bwp-minify') . '" />'
+					)
+				);
+
+				// Get a subset of the option array for this form
+				$form_options = array(
+					'input_minurl',
+					'input_minpath',
+					'input_cache_dir',
+					'input_doc_root',
+					'input_maxfiles',
+					'input_maxage',
+					'input_custom_buster',
+					'enable_min_js',
+					'enable_min_css',
+					'enable_bloginfo',
+					'enable_css_bubble',
+					'enable_cache_file_lock',
+					'select_buster_type',
+					'select_time_type',
+				);
+
+				// Flush the cache
+				if (isset($_POST['flush_cache']) && !$this->is_normal_admin())
+				{
+					check_admin_referer($page);
+
+					$deleted = self::_flush_cache($options['input_cache_dir']);
+					if (0 < $deleted)
+						$this->add_notice(
+							'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
+							. sprintf(
+								__("<strong>%d</strong> cached files "
+								. "have been deleted successfully!", 'bwp-minify'),
+								$deleted
+							)
+						);
+					else
+						$this->add_notice(
+							'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
+							. __("Could not delete any cached files. "
+							. "Please manually flush the cache directory.", 'bwp-minify')
+						);
+				}
+			}
+			else if ($page == BWP_MINIFY_MANAGE)
+			{
+				$bwp_option_page->set_current_tab(2);
+
+				remove_action('bwp_option_action_before_form', array($this, 'show_donation'), 12);
+
+				// add a secondary button to clear enqueued file lists (both)
+				add_filter('bwp_option_submit_button', array($this, 'add_clear_log_button'));
+				if (isset($_POST['clear_log']))
+				{
+					check_admin_referer($page);
+
+					$this->detector->clear_logs();
+					$this->add_notice(
+						__('Enqueued file lists have been cleared successfully. '
+						. 'Please try visiting a few pages on your site '
+						. 'and then refresh this page to see new file lists.', 'bwp-minify')
+					);
+				}
+
+				$form = array(
+					'items' => array(
+						'heading',
+						'heading'
+					),
+					'item_labels' => array (
+						__('Move enqueued JS files to appropriate positions', 'bwp-minify'),
+						__('Move enqueued CSS files to appropriate positions', 'bwp-minify')
+					),
+					'item_names' => array(
+						'h1',
+						'h2'
+					),
+					'heading' => array(
+						'h1' => sprintf(
+							__('<em> Below you can find a list of enqueued JS files '
+							. 'detected by this plugin. Press <strong>select</strong> and '
+							. 'then choose an appropriate position for selected JS file. '
+							. 'You can also directly type in one script handle (<strong>NOT '
+							. 'filename/script src</strong>) per line in the input field if '
+							. 'you want.</em> More info <a href="%s#positioning-your-files">here</a>.', 'bwp-minify'),
+							$this->plugin_url
+						),
+						'h2' => sprintf(
+							__('<em> Below you can find a list of enqueued CSS files '
+							. 'detected by this plugin. Press <strong>select</strong> and '
+							. 'then choose an appropriate position for selected CSS file. '
+							. 'You can also directly type in one style handle (<strong>NOT '
+							. 'filename/style src</strong>) per line in the input field if '
+							. 'you want.</em> More info <a href="%s#positioning-your-files">here</a>.', 'bwp-minify'),
+							$this->plugin_url
+						)
+					),
+					'textarea' => array (
+					),
+					'container' => array(
+						'h1' => $this->_show_enqueued_scripts(),
+						'h2' => $this->_show_enqueued_styles(),
+					)
+				);
+
+				// Get a subset of the option array for this form
+				$form_options = array(
+					'input_ignore',
+					'input_header',
+					'input_direct',
+					'input_footer',
+					'input_oblivion',
+					'input_style_ignore',
+					'input_style_direct',
+					'input_style_oblivion',
+				);
+			}
 		}
 
+		$option_formats = array(
+			'input_maxfiles' => 'int',
+			'input_maxage' => 'int',
+			'select_time_type' => 'int'
+		);
+
+		$option_super_admin = $this->site_options;
+
 		// Get option from user input
-		if (isset($_POST['submit_' . $bwp_option_page->get_form_name()]) && isset($options) && is_array($options))
-		{
+		if (isset($_POST['submit_' . $bwp_option_page->get_form_name()])
+			&& isset($options) && is_array($options)
+		) {
+			// Basic security check
 			check_admin_referer($page);
+
 			foreach ($options as $key => &$option)
 			{
-				// [WPMS Compatible]
-				if ($this->is_normal_admin() && in_array($key, $option_super_admin))
-				{
+				if (!in_array($key, $form_options)
+					|| ($this->is_normal_admin()
+					&& in_array($key, $option_super_admin))
+				) {
+					// field not found in options assigned to current form
+					// OR not a super admin, and this is a super-admin only setting
+					continue;
 				}
 				else
 				{
@@ -494,49 +692,114 @@ if (!empty($page))
 						$option = '';
 				}
 			}
-			update_option($page, $options);
-			// [WPMS Compatible]
+
+			// update per-blog options
+			update_option(BWP_MINIFY_OPTION_GENERAL, $options);
+			// if current user is super admin, allow him to update site-only
+			// options - this is WPMS compatible
 			if (!$this->is_normal_admin())
-				update_site_option($page, $options);
-			// Update options successfully
-			$this->add_notice(__('All options have been saved.', 'bwp-minify'));
+				update_site_option(BWP_MINIFY_OPTION_GENERAL, $options);
+
+			// refresh the options property to include updated options
+			$this->options = array_merge($this->options, $options);
+
+			if ($page == BWP_MINIFY_OPTION_GENERAL) {
+				$this->add_notice(__('All options have been saved.', 'bwp-minify'));
+			} else if ($page == BWP_MINIFY_MANAGE) {
+				$this->add_notice(
+					__('All positions have been saved. '
+					. 'Try visiting some pages on your site and then '
+					. 'refresh this page for updated file lists.', 'bwp-minify')
+				);
+			}
+
+			// take care of some POST actions when we're on the General Options page
+			if ($page == BWP_MINIFY_OPTION_GENERAL && !$this->is_normal_admin())
+			{
+				// try to save the Minify config file
+				$result = $this->create_minify_config_file();
+				if (true === $result)
+				{
+					// config file was successfully written
+					$this->add_notice(sprintf(
+						__('Minify config file <code>%s</code> '
+						. 'has been updated successfully.', 'bwp-minify'),
+						$this->min_dir . 'config.php'
+					));
+				}
+				else if ('config' === $result)
+				{
+					// config file is missing
+					// TODO: should update to use `add_error` when all other
+					// plugins have been updated
+					$this->add_notice(
+						'<strong style="color:red">' . __('Error') . ':</strong> '
+						. __('Minify config file <code>config.php</code> is not found, '
+						. 'please try re-uploading or re-installing this plugin.', 'bwp-minify')
+					);
+				}
+				else if ('write' === $result)
+				{
+					// the write process failed for some reasons
+					// TODO: should update to use `add_error` when all other
+					// plugins have been updated
+					$this->add_notice(sprintf(
+						'<strong style="color:red">' . __('Error') . ':</strong> '
+						. __('There was an error writing to Minify config file <code>%s</code>. '
+						. 'Please try again.', 'bwp-minify'),
+						$this->min_dir . 'config.php'
+					));
+				}
+				else
+				{
+					// config file is not writable, show the auto-generated
+					// contents to admin for manual update
+					$this->add_notice(sprintf(
+						__('Minify config file <code>%s</code> '
+						. 'is not writable. See '
+						. '<a href="#minify.config.php">below</a> '
+						. 'for details.', 'bwp-minify'),
+						$this->min_dir . 'config.php'
+					));
+					$form['container']['h2'] = $this->_show_generated_config($result);
+				}
+			}
 		}
 
-		// Guessing the cache directory
-		$options['input_cache_dir'] = empty($options['input_cache_dir'])
-			? $this->get_cache_dir($options['input_minpath'])
-			: $options['input_cache_dir'];
+		// take care of non-POST actions when we're on General Options page
+		if ($page == BWP_MINIFY_OPTION_GENERAL)
+		{
+			// re-generate the buster string preview whenever buster type change
+			$options['input_custom_buster'] = $this->get_buster($options['select_buster_type']);
+			if ('custom' == $options['select_buster_type'])
+				unset($form['input']['input_custom_buster']['disabled']);
 
-		// [WPMS Compatible]
-		if ($this->is_normal_admin())
-			$bwp_option_page->kill_html_fields($form, array(5,6));
+			// warns admin that the cache directory is not writable
+			if (!empty($options['input_cache_dir'])
+				&& !is_writable($options['input_cache_dir'])
+				&& !$this->is_normal_admin()
+			) {
+				$this->add_notice(
+					'<strong>' . __('Warning') . ':</strong> '
+					. sprintf(
+						__("Cache directory <code>%s</code> does not exist or is not writable. "
+						. "Please try CHMOD your cache directory to 755. "
+						. "If you still see this warning, CHMOD to 777.", 'bwp-minify'),
+						$options['input_cache_dir']
+					)
+				);
+			}
 
-		// Cache buster system
-		$this->options = array_merge($this->options, $options);
-		$options['input_custom_buster'] = $this->get_buster($options['select_buster_type']);
-		if ('custom' == $options['select_buster_type'])
-			unset($form['input']['input_custom_buster']['disabled']);
+			// Guessing the cache directory based on updated min path
+			$options['input_cache_dir'] = empty($options['input_cache_dir'])
+				? $this->get_cache_dir($options['input_minpath'])
+				: $options['input_cache_dir'];
 
-		if (!file_exists($options['input_cache_dir'])
-			|| !is_writable($options['input_cache_dir'])
-		) {
-			$this->add_notice(
-				'<strong>' . __('Warning') . ':</strong> '
-				. __("Cache directory does not exist or is not writable. "
-					. "Please try CHMOD your cache directory to 755. "
-					. "If you still see this warning, CHMOD to 777.", 'bwp-minify')
-			);
+			// Remove all Minify library-related settings if we're in multisite
+			// and this is not super-admin
+			if ($this->is_normal_admin())
+				$bwp_option_page->kill_html_fields($form, array(7,8,9,10,11,12));
 		}
-
-?>
-	<script type="text/javascript">
-		jQuery(document).ready(function(){
-			jQuery('.bwp-option-page :input[readonly]').dblclick(function(){
-				jQuery(this).removeAttr('readonly');
-			});
-		})
-	</script>
-<?php
 
 		// Assign the form and option array
 		$bwp_option_page->init($form, $options, $this->form_tabs);
@@ -545,46 +808,322 @@ if (!empty($page))
 		echo $bwp_option_page->generate_html_form();
 	}
 
+	private function _show_enqueued_styles()
+	{
+		$fields = array(
+			'input_style_ignore' => __('Styles to be ignored (not minified)', 'bwp-minify'),
+			'input_style_direct' => __('Styles to be minified and then printed separately', 'bwp-minify'),
+			'input_style_oblivion' => __('Styles to be forgotten (to remove duplicate style)', 'bwp-minify')
+		);
+
+		return $this->_show_enqueued('style', $fields);
+	}
+
+	private function _show_enqueued_scripts()
+	{
+		$fields = array(
+			'input_ignore' => __('Scripts to be ignored (not minified)', 'bwp-minify'),
+			'input_direct' => __('Scripts to be minified and then printed separately', 'bwp-minify'),
+			'input_header' => __('Scripts to be minified in header', 'bwp-minify'),
+			'input_footer' => __('Scripts to be minified in footer', 'bwp-minify'),
+			'input_oblivion' => __('Scripts to be forgotten (to remove duplicate scripts)', 'bwp-minify')
+		);
+
+		return $this->_show_enqueued('script', $fields);
+	}
+
+	private function _show_enqueued($type, $fields)
+	{
+		ob_start();
+?>
+		<div class="bwp-minify-table-wrapper">
+			<div class="bwp-minify-table-scroller">
+				<table class="bwp-minify-detector-table" cellpadding="0"
+					cellspacing="0" border="0">
+<?php
+		if ('script' == $type)
+			$this->detector->show_detected_scripts();
+		else
+			$this->detector->show_detected_styles();
+?>
+				</table>
+			</div>
+		</div>
+
+		<div class="bwp-sidebar">
+			<ul>
+<?php
+		foreach ($fields as $field => $label) :
+			$value = isset($_POST[$field])
+				? trim(strip_tags($_POST[$field]))
+				: $this->options[$field];
+?>
+				<li>
+					<a class="position-handle" data-position="<?php echo $field; ?>"
+						href="#"><span class="bwp-sign">+</span> <?php echo $label ?></a>
+					<textarea name="<?php echo $field ?>"
+						cols="20" rows="5"><?php esc_html_e($value); ?></textarea>
+				</li>
+<?php
+		endforeach;
+?>
+			</ul>
+		</div>
+		<div style="clear: both"></div>
+<?php
+
+		$output = ob_get_contents();
+		ob_end_clean();
+
+		return $output;
+	}
+
+	function add_clear_log_button($button)
+	{
+		$button = str_replace(
+			'</p>',
+			'&nbsp; <input type="submit" class="button-secondary action" '
+				. 'name="clear_log" value="'
+				. __('Clear File Lists', 'bwp-simple-gxs') . '" /></p>',
+			$button);
+
+		return $button;
+	}
+
+	private function _show_generated_config($contents)
+	{
+		$output  = __('Could not write Minify library settings to <code>%s</code>. '
+			. 'Please update the config file manually using '
+			. 'auto-generated contents as shown below:', 'bwp-minify');
+		$output  = sprintf($output, $this->min_dir . 'config.php');
+		$output .= '<br /><br />';
+		$output .= '<textarea rows="16" cols="70">' . $contents . '</textarea>';
+
+		return $output;
+	}
+
 	/**
-	 * Gets (guess) the current cache directory based on min path
+	 * Gets blog path for the current blog in a multisite installation
 	 *
-	 * The default cache directory is /min/cache/ which can be changed inside
-	 * admin area if /min/config.php file is writable (@since 1.3.0).
+	 * @return string
 	 */
-	function get_cache_dir($min_path = '')
+	private function _get_blog_path()
 	{
 		global $current_blog;
 
-		$guess_cache = empty($min_path)
-			? $this->options['input_minpath']
-			: $min_path;
+		if (!$this->is_multisite())
+			return '';
 
-		// @since 1.0.1
-		$multisite_path = isset($current_blog->path)
-			&& '/' != $current_blog->path
+		$blog_path = isset($current_blog->path) && '/' != $current_blog->path
 			? $current_blog->path
 			: '';
 
-		$guess_cache = ltrim($guess_cache, '/');
-		$guess_cache = str_replace($multisite_path, '', dirname($guess_cache));
-		$guess_cache = trailingslashit($_SERVER['DOCUMENT_ROOT'])
-			. trailingslashit($guess_cache)
-			. 'cache/';
+		// because `$blog_path` also contains the base, we need to remove the
+		// base from it so we can process media source correctly later on
+		if (0 === strpos($blog_path, '/' . $this->base . '/'))
+			$blog_path = preg_replace('#/[^/]+#ui', '', $blog_path, 1);
 
-		return apply_filters('bwp_minify_cache_dir', str_replace('\\', '/', $guess_cache));
+		return $blog_path;
 	}
 
-	private static function flush_cache($cache_dir)
+	/**
+	 * Creates config file for Minify library based on saved settings
+	 *
+	 * The plugin will try to create/update the `config.php` file that Minify
+	 * library uses using saved settings in BWP Minify's admin page. If the
+	 * config file is not found or not writable, admin will be given the option
+	 * to copy the file's contents and create/update the file manually.
+	 *
+	 * @since 1.3.0
+	 * @return bool|string true if config file is writable or the contents to
+	 *         be written to the config file if not writable. Returns 'config'
+	 *         if `config.php` file is missing or 'write' if the write process
+	 *         fails.
+	 */
+	function create_minify_config_file()
 	{
-		$cache_dir = trailingslashit($cache_dir);
+		$options = $this->options;
+
+		// prepare config entry that can be changed
+		$min_cachePath = $options['input_cache_dir'] == $this->get_cache_dir()
+			|| empty($options['input_cache_dir'])
+			? 'dirname(dirname(__FILE__)) . \'/cache\''
+			: "'" . $options['input_cache_dir'] . "'";
+		$min_cacheFileLocking = 'yes' == $options['enable_cache_file_lock']
+			? 'true' : 'false';
+		$min_bubbleCssImports = 'yes' == $options['enable_css_bubble']
+			? 'true' : 'false';
+		$min_maxAge = (int) $options['input_maxage'] * (int) $options['select_time_type'];
+		$min_documentRoot = "'" . untrailingslashit($options['input_doc_root']) . "'";
+
+		$configs = array(
+			'min_enableBuilder' => 'false',
+			'min_builderPassword' => "'admin'",
+			'min_errorLogger' => 'false',
+			'min_allowDebugFlag' => 'false',
+			'min_cachePath' => $min_cachePath,
+			'min_documentRoot' => $min_documentRoot,
+			'min_cacheFileLocking' => $min_cacheFileLocking,
+			'min_serveOptions[\'bubbleCssImports\']' => $min_bubbleCssImports,
+			'min_serveOptions[\'maxAge\']' => $min_maxAge,
+			'min_serveOptions[\'minApp\'][\'groupsOnly\']' => 'false',
+			'min_symlinks' => 'array()',
+			'min_uploaderHoursBehind' => '0',
+			'min_libPath' => 'dirname(__FILE__) . \'/lib\'',
+			'ini_set(\'zlib.output_compression\', \'0\')' => ''
+		);
+
+		$config_lines = array();
+		foreach ($configs as $config_key => $config_value)
+		{
+			if (false === strpos($config_key, 'ini_set'))
+				$config_lines[] = '$' . $config_key . ' = ' . $config_value . ';';
+			else
+				$config_lines[] = $config_key . ';';
+		}
+
+		$lines  = '<?php' . PHP_EOL;
+		$lines .= implode(PHP_EOL, $config_lines);
+		$lines .= PHP_EOL . '// auto-generated on ' . current_time('mysql');
+
+		$min_dir = $this->get_min_dir();
+		if (false == $min_dir)
+			// Minify directory can not be found, warn admin
+			return 'config';
+
+		$config_file = $min_dir . 'config.php';
+
+		if (is_writable($config_file))
+		{
+			// write Minify config variable to `config.php` file
+			if (false === file_put_contents($config_file, $lines))
+				return 'write';
+			else
+				return true;
+		}
+		else
+		{
+			// return the contents of the config file for manual update
+			return $lines;
+		}
+	}
+
+	/**
+	 * Checks whether the config file needs to be rewritten
+	 *
+	 * This action should be called by `upgrader_process_complete` action hook
+	 * if this plugin is updated individually or in bulk.
+	 *
+	 * @since 1.3.0
+	 */
+	function check_minify_config_file($upgrader, $data)
+	{
+		if (!isset($data['type']) || !isset($data['action'])
+			|| 'plugin' != $data['type'] || 'update' != $data['action']
+			|| false === strpos($data['plugin'], 'bwp-minify/')
+		) {
+			return;
+		}
+
+		// if user is updating this plugin, try to re-generate `config.php`
+		// file silently, we do not handle any error at this stage
+		$result = $this->create_minify_config_file();
+	}
+
+	/**
+	 * Gets the directory where Minify library lives
+	 *
+	 * @since 1.3.0
+	 * @return string|bool false if no directory can be found
+	 */
+	function get_min_dir()
+	{
+		if (!empty($this->min_dir))
+			return $this->min_dir;
+
+		$min_path = $this->options['input_minpath'];
+		$min_path = ltrim($min_path, '/');
+
+		$doc_root = !empty($this->options['input_doc_root'])
+			? trim($this->options['input_doc_root'])
+			: $_SERVER['DOCUMENT_ROOT'];
+
+		$min_dir  = trailingslashit($doc_root) . $min_path;
+		$min_dir  = trailingslashit($min_dir);
+
+		if (false == $this->is_multisite())
+		{
+			// if this is NOT a multisite environment, and a `config.php` file
+			// exists, this is the Minify directory we're looking for
+			if (file_exists($min_dir . 'config.php'))
+			{
+				$this->min_dir = $min_dir;
+				return $min_dir;
+			}
+			else
+				return false;
+		}
+		else
+		{
+			// if we're in a multi-site environment, we look for Minify's
+			// directory in current blog first, and then main blog, and use
+			// the first directory that is found
+			if (!file_exists($min_dir . 'config.php'))
+			{
+				// current blog's Minify directory doesn't seem to exist,
+				// remove the current blog's path from the directory
+				// being checked and try again
+				$blog_path = $this->_get_blog_path();
+
+				$min_dir = preg_replace('#' . $blog_path . '#ui', '/', $min_dir, 1);
+				if (file_exists($min_dir . 'config.php'))
+				{
+					$this->min_dir = $min_dir;
+					return $min_dir;
+				}
+
+				return false;
+			}
+			else
+			{
+				$this->min_dir = $min_dir;
+				return $min_dir;
+			}
+		}
+	}
+
+	/**
+	 * Gets (guess) the current cache directory based on min path
+	 *
+	 * The default cache directory is `/min/cache/` which can be changed inside
+	 * admin area if `/min/config.php` file is writable (@since 1.3.0).
+	 */
+	function get_cache_dir($min_path = '')
+	{
+		$guess_cache = $this->get_min_dir();
+
+		if (false == $guess_cache)
+			// could not get Minify's directory, let admin manually set it
+			return '';
+
+		$guess_cache = dirname($guess_cache) . '/cache/';
+		$guess_cache = str_replace('\\', '/', $guess_cache);
+
+		return apply_filters('bwp_minify_cache_dir', $guess_cache);
+	}
+
+	private static function _flush_cache($cache_dir)
+	{
 		$deleted = 0;
+		$cache_dir = trailingslashit($cache_dir);
+
 		if (is_dir($cache_dir))
 		{
 			if ($dh = opendir($cache_dir))
 			{
 				while (($file = readdir($dh)) !== false)
 				{
-					if (preg_match('/^minify_[a-z0-9_\-\.,]+(\.gz)?$/i', $file))
+					if (preg_match('/^minify_[a-z0-9_\-.,]+(\.gz)?$/i', $file))
 					{
 						@unlink($cache_dir . $file);
 						$deleted++;
@@ -593,25 +1132,32 @@ if (!empty($page))
 				closedir($dh);
 			}
 		}
+
 		return $deleted;
 	}
 
 	function parse_positions()
 	{
 		$positions = array(
-			'header' 	=> $this->options['input_header'],
-			'footer' 	=> $this->options['input_footer'],
-			'direct'	=> $this->options['input_direct'],
-			'ignore'	=> $this->options['input_ignore']
+			'header'         => $this->options['input_header'],
+			'footer'         => $this->options['input_footer'],
+			'direct'         => $this->options['input_direct'],
+			'ignore'         => $this->options['input_ignore'],
+			'oblivion'       => $this->options['input_oblivion'],
+			'style_direct'   => $this->options['input_style_direct'],
+			'style_ignore'   => $this->options['input_style_ignore'],
+			'style_oblivion' => $this->options['input_style_oblivion']
 		);
 
-		foreach ($positions as &$position)
+		foreach ($positions as $key => &$position)
 		{
 			if (!empty($position))
 			{
 				$position = explode("\n", $position);
 				$position = array_map('trim', $position);
 			}
+			$filter = false === strpos($key, 'style_') ? '_script_' : '_';
+			$position = apply_filters('bwp_minify' . $filter . $key, $position);
 		}
 
 		$this->print_positions = $positions;
@@ -624,18 +1170,14 @@ if (!empty($page))
 	 * files are located.), so if WP files are located in /blog instead of
 	 * root, the base would be `blog`.
 	 *
+	 * @uses get_site_option to add support for Multisite
 	 * @return void
 	 */
 	function get_base()
 	{
-		// TODO: check multi-site compatibility
-		$temp = @parse_url(get_site_option('siteurl'));
-
-		$port = (!empty($temp['port'])) ? ':' . $temp['port'] : '';
-		$site_url = $temp['scheme'] . '://' . $temp['host'] . $port;
-		$raw_base = trim(str_replace($site_url, '', get_site_option('siteurl')), '/');
-
-		$this->base = $raw_base;
+		$site_url = get_site_option('siteurl');
+		$base = trim(str_replace($this->http_host, '', $site_url), '/');
+		$this->base = $base;
 	}
 
 	/**
@@ -659,9 +1201,22 @@ if (!empty($page))
 			break;
 
 			case 'tver':
-				$theme = get_theme_data(STYLESHEETPATH . '/style.css');
-				if (!empty($theme['Version']))
-					$buster = $theme['Version'];
+				if (function_exists('wp_get_theme'))
+				{
+					$theme = wp_get_theme();
+					if ($theme && $theme instanceof WP_Theme)
+					{
+						$version = $theme->get('Version');
+						if (!empty($version))
+							$buster = $version;
+					}
+				}
+				else
+				{
+					$theme = get_theme_data(STYLESHEETPATH . '/style.css');
+					if (!empty($theme['Version']))
+						$buster = $theme['Version'];
+				}
 			break;
 
 			case 'custom':
@@ -685,8 +1240,11 @@ if (!empty($page))
 	 */
 	function is_in($handle, $position = 'header')
 	{
-		if (!isset($this->print_positions[$position]) || !is_array($this->print_positions[$position]))
+		if (!isset($this->print_positions[$position])
+			|| !is_array($this->print_positions[$position])
+		) {
 			return false;
+		}
 
 		if (in_array($handle, $this->print_positions[$position]))
 			return true;
@@ -735,7 +1293,7 @@ if (!empty($page))
 	{
 		// prepend scheme to scheme-less URLs, to make parse_url work
 		if (0 === strpos($src, '//')) {
-			$src = 'http:'. $src;
+			$src = 'http:' . $src;
 		}
 
 		$url = @parse_url($src);
@@ -749,6 +1307,7 @@ if (!empty($page))
 			// @since 1.3.0 consider sub-domain external for now
 			if (0 <> strcmp($url['host'], $blog_url['host']))
 				return false;
+
 			return true;
 		}
 		else // Probably a relative link
@@ -785,14 +1344,13 @@ if (!empty($page))
 		$src = trim($src);
 
 		// handle possible scheme-less urls
-		if ('//' === substr($src, 0, 2)) {
+		if ('//' === substr($src, 0, 2))
 			$src = is_ssl() ? 'https:' . $src : 'http:' . $src;
-		}
 
 		// Absolute url
 		if (0 === strpos($src, 'http'))
 		{
-			// handle both http and https, can't assume $src is properly setup
+			// handle both http and https, can't assume `$src` is properly setup
 			// with appropriate scheme
 			$site_url = $this->http_host;
 			if (0 <> strncmp($site_url, $src, 5)) {
@@ -801,14 +1359,20 @@ if (!empty($page))
 					? str_replace('https:', 'http:', $site_url)
 					: str_replace('http:', 'https:', $site_url);
 			}
+
+			// we need to remove blog path from `$src` as well, this is for
+			// compatibility with sub-directory multisite installation
+			$blog_path = $this->_get_blog_path();
 			$src = str_replace($site_url, '', $src);
+			$src = preg_replace('#' . $blog_path . '#ui', '/', $src, 1);
 		}
-		else if ('/' === substr($src, 0, 1)) {
+		else if ('/' === substr($src, 0, 1))
+		{
 			// root relative url
 			if (false !== strpos($src, 'wp-includes')
 				|| false !== strpos($src, 'wp-admin')
 				|| (false !== strpos($src, 'wp-content')
-					&& false !== strpos('/' . $this->base . '/', content_url()))
+					&& false !== strpos(content_url(), '/' . $this->base . '/'))
 			) {
 				// Add base for relative media source. Because `wp_content`
 				// folder can be moved away from where WordPress's files are
@@ -910,6 +1474,7 @@ if (!empty($page))
 			'position' => 'dummy', // 'dummy', 'header', 'footer', or 'footer{n}'
 			'min' => true, // expect to be minified
 			'wp' => false, // expect to be handled by WP
+			'forget' => false, // put into oblivion or not
 			'depend' => false,
 			'group' => false
 		);
@@ -923,21 +1488,26 @@ if (!empty($page))
 		if (empty($src))
 			return $todo_item;
 
-		if (!$this->is_source_static($src) || !$this->is_local($src))
+		if ($this->is_in($handle, $prefix . 'oblivion'))
 		{
-			// if this item is dynamic or external, no minify
+			// this item is put into oblivion (forget)
 			$todo_item['min'] = false;
+			$todo_item['forget'] = true;
+			$todo_item['position'] = 'oblivion';
+			$todo_item['src'] = $src;
 		}
-		else if ('all' != $this->print_positions[$prefix . 'allowed']
-			&& !$this->is_in($handle, $prefix . 'allowed')
+		else if (('all' != $this->print_positions[$prefix . 'allowed']
+			&& !$this->is_in($handle, $prefix . 'allowed'))
+			|| !$this->is_source_static($src) || !$this->is_local($src)
 		) {
-			// If this style is specifically disallowed to be minified
+			// If this item is specifically disallowed to be minified
+			// OR if this item is dynamic or external, no minify
 			$todo_item['min'] = false;
 		}
 		else if ($this->is_in($handle, $prefix . 'ignore')
 			|| $this->is_in($handle, $prefix . 'direct')
 		) {
-			// if this style belongs to 'ignore', no minify is needed
+			// if this item belongs to 'ignore', no minify is needed
 			if ($this->is_in($handle, $prefix . 'ignore'))
 				$todo_item['min'] = false;
 
@@ -1037,13 +1607,17 @@ if (!empty($page))
 				continue;
 
 			// if this item has dependencies, and we're not resolving
-			// dependencies already OR this is a dummy item, we create group for them first
+			// dependencies already OR this is a dummy item, we create group
+			// for them first
 			if ((!$recursive || 'dummy' == $item['position'])
 				&& $item['depend'] && 0 < sizeof($item['depend'])
 			) {
 				// recursively resolve dependencies
 				$deps = $this->get_dependencies($item, $type);
-				$group_deps = array_merge($group_deps, $this->minify($deps, $type, true));
+				$group_deps = array_merge(
+					$group_deps,
+					$this->minify($deps, $type, true)
+				);
 			}
 
 			// if this is a dummy item, no processing
@@ -1072,8 +1646,6 @@ if (!empty($page))
 		global $wp_styles;
 
 		// @since 1.3.0 add 'dashicons' to default ignore list
-		$this->print_positions['style_ignore'] = apply_filters('bwp_minify_style_ignore', array('admin-bar', 'dashicons'));
-		$this->print_positions['style_direct'] = apply_filters('bwp_minify_style_direct', array(''));
 		$this->print_positions['style_allowed'] = apply_filters('bwp_minify_allowed_styles', 'all');
 
 		foreach ($todo as $handle)
@@ -1095,6 +1667,61 @@ if (!empty($page))
 			$todo_style['if'] = '';
 			$todo_style['alt'] = '';
 
+			// if this style has different media type, set it
+			if (!empty($style->args) && 'all' != $style->args)
+				$todo_style['media'] = trim($style->args);
+
+			// if this style needs conditional statement (e.g. IE-specific
+			// stylesheets)
+			if (!empty($style->extra['conditional']))
+				$todo_style['if'] = trim($style->extra['conditional']);
+
+			// if this style is an alternate stylesheet (@link
+			// http://www.w3.org/TR/REC-html40/present/styles.html#h-14.3.1)
+			if (!empty($style->extra['alt']))
+			{
+				$todo_style['alt'] = isset($style->extra['title'])
+					? trim($style->extra['title'])
+					: '';
+			}
+
+			// if this style has a RTL version, and the current text direction
+			// setting is RTL
+			if ('rtl' === $wp_styles->text_direction
+				&& !empty($style->extra['rtl'])
+			) {
+				if (is_bool($style->extra['rtl'])
+					|| 'replace' === $style->extra['rtl']
+				) {
+					// replace the style's original src with RTL version
+					$suffix = isset($style->extra['suffix'])
+						? $style->extra['suffix']
+						: '';
+					$rtl_src = str_replace("{$suffix}.css", "-rtl{$suffix}.css", $style->src);
+					$todo_style['src'] = $rtl_src;
+				}
+				else
+				{
+					// add a new todo_rtl as a clone of current todo_style and
+					// make todo_style its dependency
+					$rtl_src = trim($style->extra['rtl']);
+					$todo_rtl = $todo_style;
+					$todo_rtl['src'] = $rtl_src;
+					$todo_rtl['depend'] = array($handle);
+					$todo_rtl['min'] = $this->is_source_static($rtl_src) && $this->is_local($rtl_src);
+				}
+			}
+
+			if (true === $todo_style['forget'])
+			{
+				// this style is forgotten, we don't process it, and tell
+				// WordPress to forget it as well. We also need to detect this
+				// style as forgotten, the same goes for script
+				do_action('bwp_minify_processed_style', $handle, $todo_style);
+				$wp_styles->done[] = $handle;
+				continue;
+			}
+
 			if (did_action('bwp_minify_after_header_styles'))
 			{
 				// if this style is registered after the styles are printed, it is
@@ -1109,46 +1736,15 @@ if (!empty($page))
 				$todo_style['position'] = 'header';
 			}
 
-			if (!empty($style->args) && 'all' != $style->args)
-				// if this style has different media type, set it
-				$todo_style['media'] = trim($style->args);
-
-			// if this style needs conditional statement (e.g. IE-specific stylesheets)
-			if (!empty($style->extra['conditional']))
-				$todo_style['if'] = trim($style->extra['conditional']);
-
-			// if this style is an alternate stylesheet (@link
-			// http://www.w3.org/TR/REC-html40/present/styles.html#h-14.3.1)
-			if (!empty($style->extra['alt']))
-				$todo_style['alt'] = isset($style->extra['title']) ? trim($style->extra['title']) : '';
-
-			// if this style has a RTL version, and the current text direction
-			// setting is RTL
-			if ('rtl' === $wp_styles->text_direction && !empty($style->extra['rtl']))
-			{
-				if (is_bool($style->extra['rtl']) || 'replace' === $style->extra['rtl'] )
-				{
-					// replace the style's original src with RTL version
-					$suffix = isset($style->extra['suffix']) ? $style->extra['suffix'] : '';
-					$rtl_src = str_replace("{$suffix}.css", "-rtl{$suffix}.css", $style->src);
-					$todo_style['src'] = $rtl_src;
-				} else {
-					// add a new todo_rtl as a clone of current todo_style and
-					// make todo_style its dependency
-					$rtl_src = trim($style->extra['rtl']);
-					$todo_rtl = $todo_style;
-					$todo_rtl['src'] = $rtl_src;
-					$todo_rtl['depend'] = array($handle);
-					$todo_rtl['min'] = $this->is_source_static($rtl_src) && $this->is_local($rtl_src);
-				}
-			}
-
 			$this->todo_styles[$handle] = $todo_style;
+
 			if (!empty($todo_rtl['src']))
 			{
+				// this style needs a separate RTL stylesheet
 				$this->todo_styles[$handle . '_rtl'] = $todo_rtl;
 				$todo_rtl = false;
 			}
+
 			$wp_styles->done[] = $handle;
 		}
 
@@ -1176,9 +1772,7 @@ if (!empty($page))
 	{
 		// only procceed if we have finished printing footer styles
 		if (did_action('bwp_minify_after_footer_styles'))
-		{
 			$this->todo_late_styles = 'footer' . $this->late_style_order;
-		}
 	}
 
 	function minify_style($handle, $item, $group_handle, $group_deps)
@@ -1289,7 +1883,10 @@ if (!empty($page))
 			$this->todo_inline_styles[$group_handle][] = $handle;
 
 		// update the internal _Todo_ list
+		$item['src'] = $src;
 		$this->todo_styles[$handle] = $item;
+
+		do_action('bwp_minify_processed_style', $handle, $item);
 	}
 
 	/**
@@ -1344,6 +1941,11 @@ if (!empty($page))
 			// and ignore this group for now
 			if ($group_position != $position)
 			{
+				// this group needs to move to a new position, trigger events
+				do_action('bwp_minify_moved_group', 'style',
+					$group_handle,
+					$group_position
+				);
 				$this->min_styles[$group_handle]['position'] = $group_position;
 				continue;
 			}
@@ -1366,7 +1968,12 @@ if (!empty($page))
 		}
 
 		if (!$recursive)
+		{
 			do_action('bwp_minify_after_' . $position . '_styles');
+			// save detector's log whenever we finish printing a footer{n} batch
+			if (false !== strpos($position, 'footer' . $this->late_style_order))
+				$this->detector->commit_logs();
+		}
 
 		return $group_position;
 	}
@@ -1437,10 +2044,6 @@ if (!empty($page))
 			return array();
 
 		// @since 1.0.5 - 1.0.6
-		$this->print_positions['header']  = apply_filters('bwp_minify_script_header', $this->print_positions['header']);
-		$this->print_positions['footer']  = apply_filters('bwp_minify_script_footer', $this->print_positions['footer']);
-		$this->print_positions['ignore']  = apply_filters('bwp_minify_script_ignore', $this->print_positions['ignore']);
-		$this->print_positions['direct']  = apply_filters('bwp_minify_script_direct', $this->print_positions['direct']);
 		$this->print_positions['allowed'] = apply_filters('bwp_minify_allowed_scripts', 'all');
 
 		foreach ($todo as $handle)
@@ -1452,7 +2055,7 @@ if (!empty($page))
 			{
 				if ($todo_script['depend'])
 				{
-					// script's src is empty/invalid but it has dependencies so 
+					// script's src is empty/invalid but it has dependencies so
 					// it's probably a dummy script used to load other scripts
 					$this->todo_scripts[$handle] = $todo_script;
 					$wp_scripts->done[] = $handle;
@@ -1468,12 +2071,19 @@ if (!empty($page))
 				$todo_script['depend'][] = 'jquery-core';
 			}
 
+			if (true === $todo_script['forget'])
+			{
+				do_action('bwp_minify_processed_script', $handle, $todo_script);
+				$wp_scripts->done[] = $handle;
+				continue;
+			}
+
 			// if this script is registered in footer, or it is registered
 			// after the header scripts are printed, it is expected in footer
-			$expected_in_footer = (isset($wp_scripts->groups[$handle])
-								&& 0 < $wp_scripts->groups[$handle])
-								|| did_action('bwp_minify_after_header_scripts')
-								? true : false;
+			$expected_in_footer = isset($wp_scripts->groups[$handle])
+				&& 0 < $wp_scripts->groups[$handle]
+				|| did_action('bwp_minify_after_header_scripts')
+				? true : false;
 
 			// determine the position of the script
 			if (!$this->is_in($handle, 'header')
@@ -1519,9 +2129,7 @@ if (!empty($page))
 	{
 		// only procceed if we have finished printing footer scripts
 		if (did_action('bwp_minify_after_footer_scripts'))
-		{
 			$this->todo_late_scripts = 'footer' . $this->late_script_order;
-		}
 	}
 
 	function minify_script($handle, $item, $group_handle, $group_deps)
@@ -1557,7 +2165,7 @@ if (!empty($page))
 				{
 					// pick the first available group in the same position
 					// (header or footer) that still has room for more scripts,
-					// but do not take into account group that is
+					// but do not take into account group that is a
 					// dependency of this item's own dependencies.
 					if (isset($_group['string']) && $_group['position'] == $item['position']
 						&& $this->options['input_maxfiles'] > sizeof($_group['string'])
@@ -1617,7 +2225,10 @@ if (!empty($page))
 			$this->todo_l10n[$group_handle][] = $handle;
 
 		// update the internal _Todo_ list
+		$item['src'] = $src;
 		$this->todo_scripts[$handle] = $item;
+
+		do_action('bwp_minify_processed_script', $handle, $item);
 	}
 
 	/**
@@ -1669,6 +2280,11 @@ if (!empty($page))
 			// resolve dependencies failed, ignore this group for now
 			if ($group_position != $position)
 			{
+				// this group needs to move to a new position, trigger events
+				do_action('bwp_minify_moved_group', 'script',
+					$group_handle,
+					$group_position
+				);
 				$this->min_scripts[$group_handle]['position'] = $group_position;
 				continue;
 			}
@@ -1692,7 +2308,12 @@ if (!empty($page))
 		}
 
 		if (!$recursive)
+		{
 			do_action('bwp_minify_after_' . $position . '_scripts');
+			// save detector's log whenever we finish printing a footer batch
+			if (false !== strpos($position, 'footer'))
+				$this->detector->commit_logs();
+		}
 
 		return $group_position;
 	}

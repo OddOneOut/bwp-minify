@@ -2,279 +2,519 @@ msgid ""
 msgstr ""
 "Project-Id-Version: BWP Minify\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-10-27 14:39+0700\n"
-"PO-Revision-Date: 2013-10-27 14:39+0700\n"
-"Last-Translator: \n"
+"POT-Creation-Date: 2014-03-26 00:54+0700\n"
+"PO-Revision-Date: 2014-03-26 00:55+0700\n"
+"Last-Translator: Khang Minh <contact@betterwp.net>\n"
 "Language-Team: \n"
+"Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
 "X-Poedit-Basepath: .\n"
-"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Generator: Poedit 1.6.3\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: includes/class-bwp-framework.php:178
+#: includes/class-bwp-framework.php:205
 #, php-format
-msgid "%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</strong> or higher. The plugin will not function until you update your software. Please deactivate this plugin."
+msgid ""
+"%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</"
+"strong> or higher. The plugin will not function until you update your "
+"software. Please deactivate this plugin."
 msgstr ""
 
-#: includes/class-bwp-framework.php:190
+#: includes/class-bwp-framework.php:222
 msgid "Development Log"
 msgstr ""
 
-#: includes/class-bwp-framework.php:190
+#: includes/class-bwp-framework.php:222
 msgid "Frequently Asked Questions"
 msgstr ""
 
-#: includes/class-bwp-framework.php:190
+#: includes/class-bwp-framework.php:222
 msgid "FAQ"
 msgstr ""
 
-#: includes/class-bwp-framework.php:190
+#: includes/class-bwp-framework.php:222
 msgid "Got a problem? Send me a feedback!"
 msgstr ""
 
-#: includes/class-bwp-framework.php:190
+#: includes/class-bwp-framework.php:222
 msgid "Contact"
 msgstr ""
 
-#: includes/class-bwp-framework.php:197
-msgid "You can buy me some special coffees if you appreciate my work, thank you!"
-msgstr ""
-
-#: includes/class-bwp-framework.php:211
-msgid "Donate to "
-msgstr ""
-
-#: includes/class-bwp-framework.php:213
-msgid "One cup $5.00"
-msgstr ""
-
-#: includes/class-bwp-framework.php:214
-msgid "Two cups $10.00"
-msgstr ""
-
-#: includes/class-bwp-framework.php:215
-msgid "Five cups! $25.00"
-msgstr ""
-
-#: includes/class-bwp-framework.php:216
-msgid "One LL-cup!!! $50.00"
-msgstr ""
-
-#: includes/class-bwp-framework.php:217
-msgid "... or any amount!"
-msgstr ""
-
-#: includes/class-bwp-framework.php:232
-msgid "Latest updates from BetterWP.net!"
-msgstr ""
-
-#: includes/class-bwp-framework.php:233
-msgid "Follow me on Twitter!"
+#: includes/class-bwp-framework.php:229
+msgid ""
+"You can buy me some special coffees if you appreciate my work, thank you!"
 msgstr ""
 
 #: includes/class-bwp-framework.php:243
+msgid "Donate to "
+msgstr ""
+
+#: includes/class-bwp-framework.php:245
+msgid "One cup $5.00"
+msgstr ""
+
+#: includes/class-bwp-framework.php:246
+msgid "Two cups $10.00"
+msgstr ""
+
+#: includes/class-bwp-framework.php:247
+msgid "Five cups! $25.00"
+msgstr ""
+
+#: includes/class-bwp-framework.php:248
+msgid "One LL-cup!!! $50.00"
+msgstr ""
+
+#: includes/class-bwp-framework.php:249
+msgid "... or any amount!"
+msgstr ""
+
+#: includes/class-bwp-framework.php:264
+msgid "Latest updates from BetterWP.net!"
+msgstr ""
+
+#: includes/class-bwp-framework.php:265
+msgid "Follow me on Twitter!"
+msgstr ""
+
+#: includes/class-bwp-framework.php:275
 msgid "This Plugin is Proudly Sponsored By"
 msgstr ""
 
-#: includes/class-bwp-framework.php:260
+#: includes/class-bwp-framework.php:294
 #, php-format
 msgid "You are using version %s!"
 msgstr ""
 
-#: includes/class-bwp-framework.php:396
+#: includes/class-bwp-framework.php:465
 msgid "Settings"
 msgstr ""
 
-#: includes/class-bwp-minify.php:109
-msgid "Better WordPress Minify Settings"
-msgstr ""
-
-#: includes/class-bwp-minify.php:218
-msgid "Better WordPress Minify"
-msgstr ""
-
-#: includes/class-bwp-minify.php:229
-msgid "You do not have sufficient permissions to access this page."
-msgstr ""
-
-#: includes/class-bwp-minify.php:245
+#: includes/class-bwp-minify.php:138 includes/class-bwp-minify.php:351
+#: includes/class-bwp-minify.php:352
 msgid "General Options"
 msgstr ""
 
-#: includes/class-bwp-minify.php:246
+#: includes/class-bwp-minify.php:141 includes/class-bwp-minify.php:359
+msgid "Manage enqueued Files"
+msgstr ""
+
+#: includes/class-bwp-minify.php:341
+msgid "Better WordPress Minify"
+msgstr ""
+
+#: includes/class-bwp-minify.php:360
+msgid "Enqueued Files"
+msgstr ""
+
+#: includes/class-bwp-minify.php:375
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: includes/class-bwp-minify.php:412
+msgid "Plugin Functionality"
+msgstr ""
+
+#: includes/class-bwp-minify.php:413
 msgid "Minify JS files automatically?"
 msgstr ""
 
-#: includes/class-bwp-minify.php:247
+#: includes/class-bwp-minify.php:414
 msgid "Minify CSS files automatically?"
 msgstr ""
 
-#: includes/class-bwp-minify.php:248
+#: includes/class-bwp-minify.php:415
 msgid "Minify <code>bloginfo()</code> stylesheets?"
 msgstr ""
 
-#: includes/class-bwp-minify.php:249
-msgid "Minifying Options"
+#: includes/class-bwp-minify.php:416
+msgid "Minify Path"
 msgstr ""
 
-#: includes/class-bwp-minify.php:250
-msgid "Minify URL (double-click to edit)"
-msgstr ""
-
-#: includes/class-bwp-minify.php:251
-msgid "Cache directory (double-click to edit)"
-msgstr ""
-
-#: includes/class-bwp-minify.php:252
+#: includes/class-bwp-minify.php:417
 msgid "One minify string will contain"
 msgstr ""
 
-#: includes/class-bwp-minify.php:253
+#: includes/class-bwp-minify.php:418
 msgid "Append the minify string with"
 msgstr ""
 
-#: includes/class-bwp-minify.php:254
-msgid "Minifying Scripts Options"
+#: includes/class-bwp-minify.php:419
+msgid "Minify Library Settings"
 msgstr ""
 
-#: includes/class-bwp-minify.php:255
-msgid "Scripts to be minified in header"
+#: includes/class-bwp-minify.php:420
+msgid "Document root"
 msgstr ""
 
-#: includes/class-bwp-minify.php:256
-msgid "Scripts to be minified in footer"
+#: includes/class-bwp-minify.php:421
+msgid "Cache directory"
 msgstr ""
 
-#: includes/class-bwp-minify.php:257
-msgid "Scripts to be minified and then printed separately"
+#: includes/class-bwp-minify.php:422
+msgid "Cache age"
 msgstr ""
 
-#: includes/class-bwp-minify.php:258
-msgid "Scripts to be ignored (not minified)"
+#: includes/class-bwp-minify.php:423
+msgid "Enable bubble CSS import?"
 msgstr ""
 
-#: includes/class-bwp-minify.php:263
-msgid "<em>Options that affect both your stylesheets and scripts.</em>"
+#: includes/class-bwp-minify.php:424
+msgid "Enable cache file locking?"
 msgstr ""
 
-#: includes/class-bwp-minify.php:264
+#: includes/class-bwp-minify.php:444
 #, php-format
-msgid "<em>You can force the position of each script using those inputs below (e.g. you have a script registered in the header but you want to minify it in the footer instead). If you are still unsure, please read more <a href=\"%s#positioning-your-scripts\">here</a>. Type in one script handle (<strong>NOT filename</strong>) per line.</em>"
+msgid ""
+"<em>These options will let you control how the actual <a href=\"%s\" target="
+"\"_blank\">Minify</a> library works.</em>"
 msgstr ""
 
-#: includes/class-bwp-minify.php:268
+#: includes/class-bwp-minify.php:451
 msgid "second(s)"
 msgstr ""
 
-#: includes/class-bwp-minify.php:269
+#: includes/class-bwp-minify.php:452
 msgid "minute(s)"
 msgstr ""
 
-#: includes/class-bwp-minify.php:270
+#: includes/class-bwp-minify.php:453
 msgid "hour(s)"
 msgstr ""
 
-#: includes/class-bwp-minify.php:271
+#: includes/class-bwp-minify.php:454
 msgid "day(s)"
 msgstr ""
 
-#: includes/class-bwp-minify.php:274
+#: includes/class-bwp-minify.php:457
 msgid "Do not append anything"
 msgstr ""
 
-#: includes/class-bwp-minify.php:275
+#: includes/class-bwp-minify.php:458
 msgid "Cache folder&#8217;s last modified time"
 msgstr ""
 
-#: includes/class-bwp-minify.php:276
+#: includes/class-bwp-minify.php:459
 msgid "Your WordPress&#8217;s current version"
 msgstr ""
 
-#: includes/class-bwp-minify.php:277
+#: includes/class-bwp-minify.php:460
 msgid "Your theme&#8217;s current version"
 msgstr ""
 
-#: includes/class-bwp-minify.php:278
+#: includes/class-bwp-minify.php:461
 msgid "A custom number"
 msgstr ""
 
-#: includes/class-bwp-minify.php:282
-#: includes/class-bwp-minify.php:283
-msgid "you can still use <code>bwp_minify()</code> helper function if you disable this."
+#: includes/class-bwp-minify.php:465 includes/class-bwp-minify.php:466
+msgid ""
+"you can still use <code>bwp_minify()</code> helper function if you disable "
+"this."
 msgstr ""
 
-#: includes/class-bwp-minify.php:284
-msgid "most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it."
+#: includes/class-bwp-minify.php:467
+msgid ""
+"enable this for themes that use <code>bloginfo()</code> to print the main "
+"stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style."
+"css</code> with the rest of your css files, you must enqueue it."
 msgstr ""
 
-#: includes/class-bwp-minify.php:287
+#: includes/class-bwp-minify.php:468
 #, php-format
-msgid "This should be set automatically. If you think the URL is too long, please read <a href=\"%s#customization\">here</a> to know how to properly modify this."
+msgid ""
+"move all <code>@import</code> rules in CSS files to the top. More info <a "
+"href=\"%s\" target=\"_blank\">here</a>."
 msgstr ""
 
-#: includes/class-bwp-minify.php:288
+#: includes/class-bwp-minify.php:469
+msgid "disable this if filesystem is NFS."
+msgstr ""
+
+#: includes/class-bwp-minify.php:475
 #, php-format
-msgid "<strong>Important</strong>: Changing cache directory is a two-step process, which is described in details <a href=\"%s#advanced_customization\" target=\"_blank\">here</a>. Please note that cache directory must be writable (i.e. CHMOD to 755 or 777)."
+msgid ""
+"This should be set automatically. Please read <a href=\"%s#customization"
+"\">here</a> to know how to properly modify this."
 msgstr ""
 
-#: includes/class-bwp-minify.php:289
+#: includes/class-bwp-minify.php:482
+msgid ""
+"Leave empty to use PHP's <code>$_SERVER['DOCUMENT_ROOT']</code>. On some "
+"servers the document root is misconfigured or missing, in that case you must "
+"set this to your full document root directory with NO trailing slash."
+msgstr ""
+
+#: includes/class-bwp-minify.php:492
+#, php-format
+msgid ""
+"Expect a full path to your desired cache directory. More details can be "
+"found <a href=\"%s#advanced_customization\" target=\"_blank\">here</a>. "
+"Cache directory must be writable (i.e. CHMOD to 755 or 777)."
+msgstr ""
+
+#: includes/class-bwp-minify.php:501
 msgid "file(s) at most."
 msgstr ""
 
-#: includes/class-bwp-minify.php:290
+#: includes/class-bwp-minify.php:505
 msgid "&mdash;"
 msgstr ""
 
-#: includes/class-bwp-minify.php:291
-msgid "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+#: includes/class-bwp-minify.php:516
+msgid ""
+"<em><strong>Note:</strong> When you append one of the things above you are "
+"basically telling browsers to clear their cached version of your CSS and JS "
+"files, which is very useful when you change source files. Use this feature "
+"wisely :).</em>"
 msgstr ""
 
-#: includes/class-bwp-minify.php:301
-msgid "<em><strong>Note:</strong> When you append one of the things above you are basically telling browsers to clear their cached version of your CSS and JS files, which is very useful when you change source files. Use this feature wisely :).</em>"
-msgstr ""
-
-#: includes/class-bwp-minify.php:308
+#: includes/class-bwp-minify.php:534
 msgid "Flush the cache"
 msgstr ""
 
-#: includes/class-bwp-minify.php:328
-#: includes/class-bwp-minify.php:330
+#: includes/class-bwp-minify.php:564 includes/class-bwp-minify.php:573
 msgid "Notice"
 msgstr ""
 
-#: includes/class-bwp-minify.php:328
+#: includes/class-bwp-minify.php:566
 #, php-format
 msgid "<strong>%d</strong> cached files have been deleted successfully!"
 msgstr ""
 
-#: includes/class-bwp-minify.php:330
-msgid "Could not delete any cached files. Please manually check the cache directory."
+#: includes/class-bwp-minify.php:574
+msgid ""
+"Could not delete any cached files. Please manually flush the cache directory."
 msgstr ""
 
-#: includes/class-bwp-minify.php:364
+#: includes/class-bwp-minify.php:593
+msgid ""
+"Enqueued file lists have been cleared successfully. Please try visiting a "
+"few pages on your site and then refresh this page to see new file lists."
+msgstr ""
+
+#: includes/class-bwp-minify.php:605
+msgid "Move enqueued JS files to appropriate positions"
+msgstr ""
+
+#: includes/class-bwp-minify.php:606
+msgid "Move enqueued CSS files to appropriate positions"
+msgstr ""
+
+#: includes/class-bwp-minify.php:614
+#, php-format
+msgid ""
+"<em> Below you can find a list of enqueued JS files detected by this plugin. "
+"Press <strong>select</strong> and then choose an appropriate position for "
+"selected JS file. You can also directly type in one script handle "
+"(<strong>NOT filename/script src</strong>) per line in the input field if "
+"you want.</em> More info <a href=\"%s#positioning-your-files\">here</a>."
+msgstr ""
+
+#: includes/class-bwp-minify.php:623
+#, php-format
+msgid ""
+"<em> Below you can find a list of enqueued CSS files detected by this "
+"plugin. Press <strong>select</strong> and then choose an appropriate "
+"position for selected CSS file. You can also directly type in one style "
+"handle (<strong>NOT filename/style src</strong>) per line in the input field "
+"if you want.</em> More info <a href=\"%s#positioning-your-files\">here</a>."
+msgstr ""
+
+#: includes/class-bwp-minify.php:707
 msgid "All options have been saved."
 msgstr ""
 
-#: includes/class-bwp-minify.php:380
+#: includes/class-bwp-minify.php:710
+msgid ""
+"All positions have been saved. Try visiting some pages on your site and then "
+"refresh this page for updated file lists."
+msgstr ""
+
+#: includes/class-bwp-minify.php:725
+#, php-format
+msgid "Minify config file <code>%s</code> has been updated successfully."
+msgstr ""
+
+#: includes/class-bwp-minify.php:736 includes/class-bwp-minify.php:747
+msgid "Error"
+msgstr ""
+
+#: includes/class-bwp-minify.php:737
+msgid ""
+"Minify config file <code>config.php</code> is not found, please try re-"
+"uploading or re-installing this plugin."
+msgstr ""
+
+#: includes/class-bwp-minify.php:748
+#, php-format
+msgid ""
+"There was an error writing to Minify config file <code>%s</code>. Please try "
+"again."
+msgstr ""
+
+#: includes/class-bwp-minify.php:758
+#, php-format
+msgid ""
+"Minify config file <code>%s</code> is not writable. See <a href=\"#minify."
+"config.php\">below</a> for details."
+msgstr ""
+
+#: includes/class-bwp-minify.php:783
 msgid "Warning"
 msgstr ""
 
-#: includes/class-bwp-minify.php:380
-msgid "Cache directory does not exist or is not writable. Please try CHMOD your cache directory to 755. If you still see this warning, CHMOD to 777."
+#: includes/class-bwp-minify.php:785
+#, php-format
+msgid ""
+"Cache directory <code>%s</code> does not exist or is not writable. Please "
+"try CHMOD your cache directory to 755. If you still see this warning, CHMOD "
+"to 777."
 msgstr ""
 
-#: includes/class-bwp-minify.php:502
+#: includes/class-bwp-minify.php:814
+msgid "Styles to be ignored (not minified)"
+msgstr ""
+
+#: includes/class-bwp-minify.php:815
+msgid "Styles to be minified and then printed separately"
+msgstr ""
+
+#: includes/class-bwp-minify.php:816
+msgid "Styles to be forgotten (to remove duplicate style)"
+msgstr ""
+
+#: includes/class-bwp-minify.php:825
+msgid "Scripts to be ignored (not minified)"
+msgstr ""
+
+#: includes/class-bwp-minify.php:826
+msgid "Scripts to be minified and then printed separately"
+msgstr ""
+
+#: includes/class-bwp-minify.php:827
+msgid "Scripts to be minified in header"
+msgstr ""
+
+#: includes/class-bwp-minify.php:828
+msgid "Scripts to be minified in footer"
+msgstr ""
+
+#: includes/class-bwp-minify.php:829
+msgid "Scripts to be forgotten (to remove duplicate scripts)"
+msgstr ""
+
+#: includes/class-bwp-minify.php:887
+msgid "Clear File Lists"
+msgstr ""
+
+#: includes/class-bwp-minify.php:895
+#, php-format
+msgid ""
+"Could not write Minify library settings to <code>%s</code>. Please update "
+"the config file manually using auto-generated contents as shown below:"
+msgstr ""
+
+#: includes/class-bwp-minify.php:1229
 msgid "empty"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:107
+#: includes/class-bwp-enqueued-detector.php:119
+msgid "Handle"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:108
+#: includes/class-bwp-enqueued-detector.php:120
+msgid "Position"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:109
+msgid "Script src"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:110
+#: includes/class-bwp-enqueued-detector.php:123
+msgid "Actions"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:121
+msgid "Media"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:122
+msgid "Style src"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:220
+msgid "move to header"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:221
+msgid "move to footer"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:222
+#: includes/class-bwp-enqueued-detector.php:225
+msgid "print separately"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:223
+#: includes/class-bwp-enqueued-detector.php:226
+msgid "ignore"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:224
+#: includes/class-bwp-enqueued-detector.php:227
+msgid "forget"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:250
+msgid "select"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:270
+msgid ""
+"No enqueued files detected.<br /><br />Please try visiting a few pages on "
+"your site and then refresh this page.<br /><br />You should clear this list "
+"once in a while to get rid of files that are no longer being used as this is "
+"not done automatically."
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:305
+msgid "header"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:306
+msgid "footer"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:316
+#, php-format
+msgid "separated in %s"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:317
+#, php-format
+msgid "minified in %s"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:323
+msgid "forgotten"
+msgstr ""
+
+#: includes/class-bwp-enqueued-detector.php:324
+#, php-format
+msgid "ignored in %s"
 msgstr ""
 
 #: includes/bwp-option-page/includes/class-bwp-option-page.php:80
 msgid "Plugin Configurations"
 msgstr ""
 
-#: includes/bwp-option-page/includes/class-bwp-option-page.php:398
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:415
 msgid "Save Changes"
 msgstr ""
-

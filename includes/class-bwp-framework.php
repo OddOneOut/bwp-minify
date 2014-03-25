@@ -4,7 +4,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GNU GENERAL PUBLIC LICENSE VERSION 3.0 OR LATER
  */
 
-define('BWP_FRAMEWORK_VERSION', '1.0.0');
+define('BWP_FRAMEWORK_VERSION', '1.1.0');
 
 class BWP_FRAMEWORK {
 
@@ -84,6 +84,11 @@ class BWP_FRAMEWORK {
 	var $notices = array(), $notice_shown = false;
 
 	/**
+	 * Error shown to user
+	 */
+	var $errors = array(), $error_shown = false;
+
+	/**
 	 * Capabilities to manage this plugin
 	 */
 	var $plugin_cap = 'manage_options';
@@ -113,19 +118,24 @@ class BWP_FRAMEWORK {
 	/**
 	 * Build base properties
 	 */
-	function build_properties($key, $dkey, $options, $plugin_title = '', $plugin_file = '', $plugin_url = '', $need_media_filters = true)
+	function build_properties($key, $dkey, $options, $plugin_title = '',
+		$plugin_file = '', $plugin_url = '', $need_media_filters = true)
 	{
 		$this->plugin_key = strtolower($key);
 		$this->plugin_ckey = strtoupper($key);
 		$this->plugin_dkey = $dkey;
 		$this->plugin_title = $plugin_title;
 		$this->plugin_url = $plugin_url;
-		// The default options
+
 		$this->options_default = $options;
 		$this->need_media_filters = (boolean) $need_media_filters;
+
 		$this->plugin_file = $plugin_file;
 		$this->plugin_folder = basename(dirname($plugin_file));
-		$this->plugin_wp_url = trailingslashit(plugins_url($this->plugin_folder));
+
+		// we need to hook to init action to build WP-specific properties
+		add_action('init', array($this, 'build_wp_properties'));
+
 		// Load locale
 		load_plugin_textdomain($dkey, false, $this->plugin_folder . '/languages');
 	}
@@ -144,7 +154,10 @@ class BWP_FRAMEWORK {
 
 	function add_icon()
 	{
-		return '<div class="icon32" id="icon-bwp-plugin" style=\'background-image: url("' . constant($this->plugin_ckey . '_IMAGES') . '/icon_menu_32.png");\'><br></div>'  . "\n";
+		return '<div class="icon32" id="icon-bwp-plugin" '
+			. 'style=\'background-image: url("'
+			. constant($this->plugin_ckey . '_IMAGES')
+			. '/icon_menu_32.png");\'><br></div>'  . "\n";
 	}
 
 	function set_version($ver = '', $type = '')
@@ -175,8 +188,9 @@ class BWP_FRAMEWORK {
 
 	function check_required_versions()
 	{
-		if (version_compare(PHP_VERSION, $this->php_ver, '<') || version_compare(get_bloginfo('version'), $this->wp_ver, '<'))
-		{
+		if (version_compare(PHP_VERSION, $this->php_ver, '<')
+			|| version_compare(get_bloginfo('version'), $this->wp_ver, '<')
+		) {
 			add_action('admin_notices', array($this, 'warn_required_versions'));
 			add_action('network_admin_notices', array($this, 'warn_required_versions'));
 			return false;
@@ -187,7 +201,13 @@ class BWP_FRAMEWORK {
 
 	function warn_required_versions()
 	{
-		echo '<div class="error"><p>' . sprintf(__('%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</strong> or higher. The plugin will not function until you update your software. Please deactivate this plugin.', $this->plugin_dkey), $this->plugin_title, $this->wp_ver, $this->php_ver) . '</p></div>';
+		echo '<div class="error"><p>' . sprintf(
+			__('%s requires WordPress <strong>%s</strong> or higher '
+			. 'and PHP <strong>%s</strong> or higher. '
+			. 'The plugin will not function until you update your software. '
+			. 'Please deactivate this plugin.', $this->plugin_dkey),
+			$this->plugin_title, $this->wp_ver, $this->php_ver)
+		. '</p></div>';
 	}
 
 	function show_donation()
@@ -269,11 +289,16 @@ class BWP_FRAMEWORK {
 	function show_version()
 	{
 		if (empty($this->plugin_ver)) return '';
-		return '<a class="nav-tab version" title="' . sprintf(esc_attr(__('You are using version %s!', $this->plugin_dkey)), $this->plugin_ver) . '">' . $this->plugin_ver . '</a>';
+
+		return '<a class="nav-tab version" title="'
+			. sprintf(esc_attr(__('You are using version %s!', $this->plugin_dkey)), $this->plugin_ver)
+			. '">' . $this->plugin_ver . '</a>';
 	}
 
 	function init()
 	{
+		// Triggers this event to allow plugins to prepare for initialization
+		do_action($this->plugin_key . '_pre_init');
 		// Build constants
 		$this->build_constants();
 		// Build options
@@ -298,11 +323,25 @@ class BWP_FRAMEWORK {
 			add_filter('bwp-admin-plugin-version', array($this, 'show_version'));
 			add_action('bwp_option_action_before_form', array($this, 'show_donation'), 12);
 		}
+		// Triggers this event to allow plugins to finish initialization
+		do_action($this->plugin_key . '_after_init');
 	}
 
 	function add_cap($cap)
 	{
 		$this->plugin_cap = $cap;
+	}
+
+	function build_wp_properties()
+	{
+		// set the plugin WP url here so it can be filtered
+		if (defined('BWP_USE_SYMLINKS'))
+			// make use of symlinks on development environment
+			$this->plugin_wp_url = trailingslashit(plugins_url($this->plugin_folder));
+		else
+			// this should allow other package to include BWP plugins while
+			// retaining correct URLs pointing to assets
+			$this->plugin_wp_url = trailingslashit(plugin_dir_url($this->plugin_file));
 	}
 
 	function build_constants()
@@ -405,16 +444,25 @@ class BWP_FRAMEWORK {
 
 	function is_admin_page()
 	{
-		if (is_admin() && !empty($_GET['page']) && (in_array($_GET['page'], $this->option_keys) || in_array($_GET['page'], $this->extra_option_keys)))
+		if (is_admin() && !empty($_GET['page'])
+			&& (in_array($_GET['page'], $this->option_keys)
+			|| in_array($_GET['page'], $this->extra_option_keys))
+		) {
 			return true;
+		}
 	}
 
 	function plugin_action_links($links, $file)
 	{
-		$option_script = (!$this->_menu_under_settings && !$this->_simple_menu) ? 'admin.php' : 'options-general.php';
+		$option_script = !$this->_menu_under_settings && !$this->_simple_menu
+			? 'admin.php'
+			: 'options-general.php';
+
 		$option_keys = array_values($this->option_keys);
 		if ($file == plugin_basename($this->plugin_file))
-			$links[] = '<a href="' . $option_script . '?page=' . $option_keys[0] . '">' . __('Settings') . '</a>';
+			$links[] = '<a href="' . $option_script . '?page='
+				. $option_keys[0] . '">'
+				. __('Settings') . '</a>';
 
 		return $links;
 	}
@@ -429,12 +477,23 @@ class BWP_FRAMEWORK {
 		{
 			// Build tabs
 			$this->build_tabs();
+
 			// Load option page builder
 			if (!class_exists('BWP_OPTION_PAGE'))
-				require_once(dirname(__FILE__) . '/bwp-option-page/bwp-option-page.php');
+				require_once dirname(__FILE__) . '/bwp-option-page/bwp-option-page.php';
+
 			// Enqueue style sheets and scripts for the option page
-			wp_enqueue_style('bwp-option-page',  $this->plugin_wp_url . 'includes/bwp-option-page/css/bwp-option-page.css', array(), '1.0.1');
-			wp_enqueue_script('bwp-paypal-js',  $this->plugin_wp_url . 'includes/bwp-option-page/js/paypal.js', array('jquery'));
+			wp_enqueue_style(
+				'bwp-option-page',
+				$this->plugin_wp_url . 'includes/bwp-option-page/css/bwp-option-page.css',
+				array(),
+				'1.0.1'
+			);
+			wp_enqueue_script(
+				'bwp-paypal-js',
+				$this->plugin_wp_url . 'includes/bwp-option-page/js/paypal.js',
+				array('jquery')
+			);
 		}
 
 		$this->build_menus();
@@ -450,11 +509,19 @@ class BWP_FRAMEWORK {
 
 	function build_tabs()
 	{
-		$option_script = (!$this->_menu_under_settings) ? 'admin.php' : 'options-general.php';
+		$option_script = !$this->_menu_under_settings
+			? 'admin.php'
+			: 'options-general.php';
+
 		foreach ($this->option_pages as $key => $page)
 		{
-			$pagelink = (!empty($this->option_keys[$key])) ? $this->option_keys[$key] : $this->extra_option_keys[$key];
-			$this->form_tabs[$page] = get_option('siteurl') . '/wp-admin/' . $option_script . '?page=' . $pagelink;
+			$pagelink = !empty($this->option_keys[$key])
+				? $this->option_keys[$key]
+				: $this->extra_option_keys[$key];
+
+			$this->form_tabs[$page] = get_option('siteurl')
+				. '/wp-admin/' . $option_script
+				. '?page=' . $pagelink;
 		}
 	}
 
@@ -486,6 +553,27 @@ class BWP_FRAMEWORK {
 				echo '<div class="updated fade"><p>' . $notice . '</p></div>';
 			}
 			$this->notice_shown = true;
+		}
+	}
+
+	function add_error($error)
+	{
+		if (!in_array($error, $this->errors))
+		{
+			$this->errors[] = $error;
+			add_action('bwp_option_action_before_form', array($this, 'show_errors'));
+		}
+	}
+
+	function show_errors()
+	{
+		if (false == $this->error_shown)
+		{
+			foreach ($this->errors as $error)
+			{
+				echo '<div class="error"><p>' . $error . '</p></div>';
+			}
+			$this->error_shown = true;
 		}
 	}
 
