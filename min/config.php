@@ -13,4 +13,3 @@ $min_symlinks = array();
 $min_uploaderHoursBehind = 0;
 $min_libPath = dirname(__FILE__) . '/lib';
 ini_set('zlib.output_compression', '0');
-// auto-generated on 2014-03-25 17:52:37
