@@ -755,7 +755,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 					// config file is not writable, show the auto-generated
 					// contents to admin for manual update
 					$this->add_notice(sprintf(
-						__('Minify config file <code>%s</code> '
+						'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
+						. __('Minify config file <code>%s</code> '
 						. 'is not writable. See '
 						. '<a href="#minify.config.php">below</a> '
 						. 'for details.', 'bwp-minify'),
@@ -893,11 +894,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	private function _show_generated_config($contents)
 	{
 		$output  = __('Could not write Minify library settings to <code>%s</code>. '
-			. 'Please update the config file manually using '
-			. 'auto-generated contents as shown below:', 'bwp-minify');
+			. 'Please update the config file manually by <em>replacing</em> its current contents '
+			. 'with auto-generated contents as shown below:', 'bwp-minify');
 		$output  = sprintf($output, $this->min_dir . 'config.php');
 		$output .= '<br /><br />';
-		$output .= '<textarea rows="16" cols="70">' . $contents . '</textarea>';
+		$output .= '<textarea class="code" rows="16" cols="80" readonly="readonly">'
+			. $contents
+			. '</textarea>';
 
 		return $output;
 	}
