@@ -18,12 +18,3 @@ if (class_exists('BWP_MINIFY'))
 // Frontend
 require_once('includes/class-bwp-minify.php');
 $bwp_minify = new BWP_MINIFY();
-
-// Backend
-add_action('admin_menu', 'bwp_minify_init_admin', 1);
-
-function bwp_minify_init_admin()
-{
-	global $bwp_minify;
-	$bwp_minify->init_admin();
-}

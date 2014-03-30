@@ -20,9 +20,15 @@ class BWP_Enqueued_Detector
 
 	private $_logs = array();
 
+	private $_db_logs = array();
+
 	private $_scripts = array();
 
 	private $_styles = array();
+
+	private $_groups = array();
+
+	private $_version = '1.0.0';
 
 	public function __construct($options, $domain)
 	{
@@ -46,14 +52,9 @@ class BWP_Enqueued_Detector
 	 *        list at the time of detection.
 	 * @return void
 	 */
-	public function detect_script($handle, $item, $groups = array())
+	public function detect_script($handle, $item)
 	{
 		$group_handle = $item['group'];
-
-		/* if (!isset($groups[$group_handle])) */
-		/* 	return; */
-
-		/* $group = $groups[$group_handle]; */
 
 		$log_data = array(
 			'handle'   => $handle,
@@ -80,14 +81,9 @@ class BWP_Enqueued_Detector
 	 *        list at the time of detection.
 	 * @return void
 	 */
-	public function detect_style($handle, $item, $groups = array())
+	public function detect_style($handle, $item)
 	{
 		$group_handle = $item['group'];
-
-		/* if (!isset($groups[$group_handle])) */
-		/* 	return; */
-
-		/* $group = $groups[$group_handle]; */
 
 		$log_data = array(
 			'handle'   => $handle,
@@ -99,6 +95,75 @@ class BWP_Enqueued_Detector
 		);
 
 		$this->_log('style', $log_data);
+	}
+
+	/**
+	 * Detects a group that is going to be served
+	 *
+	 * @param $group_handle string handle of the group being detected
+	 * @param $string string the original string that contains paths to
+	 *        files as a comma-separated list
+	 * @param $group_type string either 'script' or 'style'
+	 * @return void
+	 */
+	public function detect_group($group_handle, $string, $group_type)
+	{
+		$hash = md5($string . $this->_version);
+
+		$this->_log('group', array(
+			'handle' => $group_handle . '-' . substr($hash, 0, 15),
+			'string' => $string,
+			'type'   => $group_type,
+			'hash'   => $hash
+		));
+	}
+
+	public function get_group($group_handle, $from_db = false)
+	{
+		$groups = $this->_groups;
+
+		foreach ($groups as $handle => $group)
+		{
+			if ($group_handle == $handle)
+				return $group;
+		}
+
+		return false;
+	}
+
+	public function get_detected_scripts($from_db = false)
+	{
+		if ($from_db)
+			return isset($this->_db_logs['scripts'])
+				? $this->_db_logs['scripts']
+				: array();
+		else
+			return $this->_scripts;
+	}
+
+	public function get_detected_styles($from_db = false)
+	{
+		if ($from_db)
+			return isset($this->_db_logs['styles'])
+				? $this->_db_logs['styles']
+				: array();
+		else
+			return $this->_styles;
+	}
+
+	public function get_detected_groups($from_db = false)
+	{
+		if ($from_db)
+			return isset($this->_db_logs['groups'])
+				? $this->_db_logs['groups']
+				: array();
+		else
+			return $this->_groups;
+	}
+
+	public function get_version()
+	{
+		return $this->_version;
 	}
 
 	public function show_detected_scripts()
@@ -126,19 +191,17 @@ class BWP_Enqueued_Detector
 		$this->_show_log('style', $headings);
 	}
 
-	public function clear_logs($type = false)
+	public function clear_logs($type = 'enqueue')
 	{
-		if (false === $type)
+		if ('enqueue' === $type || 'all' == $type)
 		{
 			$this->_scripts = array();
 			$this->_styles = array();
 		}
-		else 
+
+		if ('group' == $type || 'all' == $type)
 		{
-			if ('script' == $type)
-				$this->_scripts = array();
-			else
-				$this->_styles = array();
+			$this->_groups = array();
 		}
 
 		$this->commit_logs();
@@ -179,12 +242,13 @@ class BWP_Enqueued_Detector
 
 		$this->_log_key = $key;
 		$this->_logs = !empty($logs) ? (array) $logs : array();
+		$this->_db_logs = $this->_logs;
 
 		$this->_prepare_logs();
 	}
 
 	/**
-	 * Combines scripts and styles logs and overwrites logs in db
+	 * Combines all logs and overwrites logs in db
 	 *
 	 * @return void
 	 */
@@ -192,9 +256,10 @@ class BWP_Enqueued_Detector
 	{
 		$this->_logs = array(
 			'scripts' => $this->_scripts,
-			'styles' => $this->_styles
+			'styles'  => $this->_styles,
+			'groups'  => $this->_groups
 		);
-		/* echo '<pre>' . var_export($this->_logs, 1) . '</pre>'; */
+
 		update_option($this->_log_key, $this->_logs);
 	}
 
@@ -329,8 +394,10 @@ class BWP_Enqueued_Detector
 	{
 		if ('script' == $type)
 			$this->_scripts[$data['handle']] = $data;
-		else
+		else if ('style' == $type)
 			$this->_styles[$data['handle']] = $data;
+		else if ('group' == $type)
+			$this->_groups[$data['handle']] = $data;
 	}
 
 	private function _prepare_logs()
@@ -343,6 +410,10 @@ class BWP_Enqueued_Detector
 
 		$this->_styles = isset($logs['styles']) && is_array($logs['styles'])
 			? $logs['styles']
+			: array();
+
+		$this->_groups = isset($logs['groups']) && is_array($logs['groups'])
+			? $logs['groups']
 			: array();
 	}
 

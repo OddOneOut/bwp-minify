@@ -23,11 +23,11 @@
  */
 
 /**
- * This is a wrapper function to help you convert a normal source to a minified source.
- * Please do not use this function before WordPress has been initialized. Otherwise, you might get a fatal error.
+ * This is a wrapper function to help you convert a normal source to a minified
+ * source. Please do not use this function before WordPress has been
+ * initialized. Otherwise, you might get a fatal error.
  *
  * @param string $src The source file you would like to convert
- * @link http://betterwp.net/wordpress-plugins/bwp-minify/ for more information
  */
 function bwp_minify($src)
 {
@@ -36,10 +36,10 @@ function bwp_minify($src)
 	return $bwp_minify->get_minify_src($bwp_minify->process_media_source($src));
 }
 
-if (!class_exists('BWP_FRAMEWORK'))
-	require_once('class-bwp-framework.php');
+if (!class_exists('BWP_FRAMEWORK_IMPROVED'))
+	require_once('class-bwp-framework-improved.php');
 
-class BWP_MINIFY extends BWP_FRAMEWORK
+class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 {
 	/**
 	 * Positions to put scripts/styles in
@@ -81,6 +81,39 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	var $http_host = '', $min_url = '', $min_dir = '';
 
 	/**
+	 * Rewrite rules used for friendly minify url
+	 *
+	 * @since 1.3.0
+	 * @var array
+	 */
+	var $rewrite_rules;
+
+	/**
+	 * Holds an instance of BWP Enqueued Detector class
+	 *
+	 * Responsible for detecting and logging enqueued JS, CSS files. Also used
+	 * to display a friendly page to move JS, CSS files to appropriate
+	 * positions.
+	 *
+	 * @since 1.3.0
+	 * @var BWP_Enqueued_Detector
+	 */
+	var $detector;
+
+	/**
+	 * Holds an instance of BWP Minify Fetcher class
+	 *
+	 * Responsible for fetching minified contents served by Minify library and
+	 * allow BWP Minify to link to them from almost anywhere. This makes it
+	 * possible to have pretty Minify urls like
+	 * `http://www.example.com/assets/arandomstring.js`
+	 *
+	 * @since 1.3.0
+	 * @var BWP_Minify_Fetcher
+	 */
+	var $fetcher;
+
+	/**
 	 * Constructor
 	 */
 	function __construct($version = '1.2.3')
@@ -99,6 +132,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			'input_minurl' => '', // @deprecated 1.3.0 replaced by input_minpath
 			'input_minpath' => '',
 			'input_cache_dir' => '', // super admin, Minify
+			'input_fly_minpath' => '/min-assets/', // @since 1.3.0, `fly` stands for friendly
 			'input_doc_root' => '', // @since 1.3.0 super admin, Minify
 			'input_maxfiles' => 10,
 			'input_maxage' => 2, // super admin, Minify
@@ -116,9 +150,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			'enable_bloginfo' => '',
 			'enable_css_bubble' => 'yes', // @since 1.3.0 super admin, Minify
 			'enable_cache_file_lock' => 'yes', // @since 1.3.0 super admin, Minify
+			'enable_fly_min' => '', // @since 1.3.0
 			'select_buster_type' => 'none',
-			'select_time_type' => 3600 // super admin, Minify
+			'select_time_type' => 3600, // super admin, Minify
+			'select_fly_serve_method' => 'wp' // @since 1.3.0
 		);
+
+		// this default option requires some work
+		add_action('bwp_minify_pre_init', array($this, 'default_minpath'));
 
 		// super admin only options
 		$this->site_options = array(
@@ -130,40 +169,49 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			'select_time_type'
 		);
 
-		$this->build_properties('BWP_MINIFY', 'bwp-minify', $options,
-			'BetterWP Minify', dirname(dirname(__FILE__)) . '/bwp-minify.php',
-			'http://betterwp.net/wordpress-plugins/bwp-minify/', false
-		);
 		$this->add_option_key('BWP_MINIFY_OPTION_GENERAL', 'bwp_minify_general',
 			__('General Options', 'bwp-minify')
+		);
+		$this->add_option_key('BWP_MINIFY_OPTION_ADVANCED', 'bwp_minify_advanced',
+			__('Advanced Options', 'bwp-minify')
 		);
 		$this->add_extra_option_key('BWP_MINIFY_MANAGE', 'bwp_minify_manage',
 			__('Manage enqueued Files', 'bwp-minify')
 		);
-
 		// define hidden option keys
 		define('BWP_MINIFY_DETECTOR_LOG', 'bwp_minify_detector_log');
 
-		// backward compatible with older frameword version,
-		// `plugin_wp_url` is only available since framework version 1.1.0
-		if (version_compare(BWP_FRAMEWORK_VERSION, '1.1.0', '<'))
-		{
-			$this->plugin_folder = basename(dirname($this->plugin_file));
-			add_action('init', array($this, 'set_plugin_wp_url'));
-		}
-
-		add_action('init', array($this, 'default_minpath'));
-		add_action('init', array($this, 'init'));
-		add_action('init', array($this, 'enqueue_media'));
-		add_action('upgrader_process_complete', array($this, 'check_minify_config_file'), 10, 2);
+		$this->build_properties('BWP_MINIFY', 'bwp-minify', $options,
+			'BetterWP Minify', dirname(dirname(__FILE__)) . '/bwp-minify.php',
+			'http://betterwp.net/wordpress-plugins/bwp-minify/', false
+		);
 	}
 
-	function set_plugin_wp_url()
+	function install()
 	{
-		if (defined('BWP_USE_SYMLINKS'))
-			$this->plugin_wp_url = trailingslashit(plugins_url($this->plugin_folder));
-		else
-			$this->plugin_wp_url = trailingslashit(plugin_dir_url($this->plugin_file));
+		// if friendly minify url is enabled we need to flush rewrite rules
+		if ('yes' == $this->options['enable_fly_min'])
+			$this->_add_rewrite_rules(true);
+	}
+
+	function pre_init_properties()
+	{
+		$this->parse_positions();
+		$this->ver = get_bloginfo('version');
+		$this->rewrite_rules = array(
+			'wp' => array(
+				'pattern' => 'minify-group-([a-zA-Z0-9-_.]+)\.(js|css)$',
+				'query' => 'index.php?min_group=$matches[1]&min_type=$matches[2]'
+			),
+			'server' => array(
+			)
+		);
+	}
+
+	function load_libraries()
+	{
+		require_once dirname(__FILE__) . '/class-bwp-enqueued-detector.php';
+		require_once dirname(__FILE__) . '/class-bwp-minify-fetcher.php';
 	}
 
 	/**
@@ -205,9 +253,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	function init_properties()
 	{
 		$this->get_base();
-		$this->parse_positions();
-		$this->ver = get_bloginfo('version');
-
 		$this->options['input_cache_dir'] = empty($this->options['input_cache_dir'])
 			? $this->get_cache_dir()
 			: $this->options['input_cache_dir'];
@@ -215,13 +260,95 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		$this->buster = $this->get_buster($this->options['select_buster_type']);
 		$this->min_url  = trailingslashit($this->http_host) . ltrim($this->options['input_minpath'], '/');
 
-		// load and init the detector class
-		require_once dirname(__FILE__) . '/class-bwp-enqueued-detector.php';
+		// init the detector class, responsible for detecting and logging
+		// enqueued files
 		$this->detector = new BWP_Enqueued_Detector($this->options, 'bwp-minify');
 		$this->detector->set_log(BWP_MINIFY_DETECTOR_LOG);
+
+		// init the fetcher class if needed, responsible for serving friendly
+		// minify urls
+		if ('yes' == $this->options['enable_fly_min'])
+		{
+			$this->fetcher = new BWP_Minify_Fetcher($this->options, 'bwp-minify');
+			$this->fetcher->set_detector($this->detector);
+			$this->fetcher->set_min_url($this->min_url);
+			$this->fetcher->set_rewrite_pattern($this->rewrite_rules['wp']['pattern']);
+		}
 	}
 
-	private static function is_loadable()
+	function add_query_vars($vars)
+	{
+		array_push($vars, 'min_group');
+		array_push($vars, 'min_type');
+
+		return $vars;
+	}
+
+	function add_rewrite_rules($rules)
+	{
+		$min_path = $this->_sanitize_min_path(true);
+
+		// add a WordPress rewrite rule all the time regardless of the current
+		// serve method, this is to make WordPress rewrite rules to act as a
+		// backup for server rewrite rules if writing server rewrite rules
+		// failed for some reasons
+		$pattern = $min_path . $this->rewrite_rules['wp']['pattern'];
+		$min_rules = array($pattern => $this->rewrite_rules['wp']['query']);
+		$rules = array_merge($min_rules, $rules);
+
+		if ('server' == $this->options['select_fly_serve_method'])
+		{
+			// add server rewrite rules 
+		}
+
+		return $rules;
+	}
+
+	function add_external_rewrite_rules()
+	{
+		global $wp_rewrite;
+
+		$min_path = $this->_sanitize_min_path(true);
+
+		$wp_rewrite->add_external_rule(
+			$min_path . 'minify-([a-zA-Z0-9-_.]+)-group\.(js|css)$',
+			'index.php?minify_group=$matches[1]&minify_type=$matches[2]'
+		);
+	}
+
+	private function _sanitize_min_path($left_trim = false, $min_path = false)
+	{
+		$min_path = !$min_path ? $this->options['input_fly_minpath'] : $min_path;
+		$min_path = trailingslashit($min_path);
+		$min_path = str_replace('\\', '/', $min_path);
+		$min_path = $left_trim ? ltrim($min_path, '/') : $min_path;
+
+		return $min_path;
+	}
+
+	private function _add_rewrite_rules($flush = false)
+	{
+		$hard = false;
+
+		add_filter('rewrite_rules_array', array($this, 'add_rewrite_rules'));
+		add_filter('query_vars', array($this, 'add_query_vars'));
+
+		if ('server' == $this->options['select_fly_serve_method'])
+			// if serve method is server rewrite rules, do a hash flush
+			$hard = true;
+
+		if ($flush)
+			self::_flush_rewrite_rules($hard);
+	}
+
+	private static function _flush_rewrite_rules($hard = false)
+	{
+		global $wp_rewrite;
+
+		$wp_rewrite->flush_rules($hard);
+	}
+
+	private static function _is_loadable()
 	{
 		if (!did_action('template_redirect'))
 			return true;
@@ -250,7 +377,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		// Certain plugins use a single file to show contents, which doesn't
 		// make use of wp_head and wp_footer action and certain plugins should
 		// just be excluded :-)
-		if (false == apply_filters('bwp_minify_is_loadable', self::is_loadable()))
+		if (false == apply_filters('bwp_minify_is_loadable', self::_is_loadable()))
 			return;
 
 		// Allow other developers to use BWP Minify inside wp-admin, be very careful :-)
@@ -309,6 +436,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 	function add_hooks()
 	{
+		// add rewrite rules for friendly minify url if needed
+		if ('yes' == $this->options['enable_fly_min'])
+			$this->_add_rewrite_rules();
+
+		// check and update Minify config file whenever this plugin is updated
+		add_action('upgrader_process_complete', array($this, 'check_minify_config_file'), 10, 2);
+
 		if (false === strpos($_SERVER['REQUEST_URI'], 'wp-login.php')
 			&& false === strpos($_SERVER['REQUEST_URI'], 'wp-signup.php'))
 			add_action('template_redirect', array($this, 'add_conditional_hooks'));
@@ -356,6 +490,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		);
 		add_submenu_page(
 			BWP_MINIFY_OPTION_GENERAL,
+			__('Advanced Options', 'bwp-minify'),
+			__('Advanced Options', 'bwp-minify'),
+			BWP_MINIFY_CAPABILITY,
+			BWP_MINIFY_OPTION_ADVANCED,
+			array($this, 'build_option_pages')
+		);
+		add_submenu_page(
+			BWP_MINIFY_OPTION_GENERAL,
 			__('Manage enqueued Files', 'bwp-minify'),
 			__('Enqueued Files', 'bwp-minify'),
 			BWP_MINIFY_CAPABILITY,
@@ -374,16 +516,56 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		if (!current_user_can(BWP_MINIFY_CAPABILITY))
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 
-		// Init the class
 		$page = $_GET['page'];
+		$active_page = '';
+		$original_options = $this->options;
 		$bwp_option_page = new BWP_OPTION_PAGE($page, $this->site_options);
 
-		// Get option from the database, these options are used for both admin pages
-		$options = $bwp_option_page->get_db_options(
-			BWP_MINIFY_OPTION_GENERAL,
-			$this->options
-		);
-
+		// Get option from the database, general options are used for both
+		// 'General Options' page and 'Manage enqueued' page
+		if (BWP_MINIFY_OPTION_GENERAL == $page || BWP_MINIFY_MANAGE == $page)
+		{
+			$active_page = BWP_MINIFY_OPTION_GENERAL;
+			$options = $bwp_option_page->get_db_options(
+				$active_page,
+				$bwp_option_page->get_options(array(
+					'input_minurl',
+					'input_minpath',
+					'input_cache_dir',
+					'input_doc_root',
+					'input_maxfiles',
+					'input_maxage',
+					'input_custom_buster',
+					'enable_min_js',
+					'enable_min_css',
+					'enable_bloginfo',
+					'enable_css_bubble',
+					'enable_cache_file_lock',
+					'select_buster_type',
+					'select_time_type',
+					'input_ignore',
+					'input_header',
+					'input_direct',
+					'input_footer',
+					'input_oblivion',
+					'input_style_ignore',
+					'input_style_direct',
+					'input_style_oblivion',
+				), $this->options)
+			);
+		}
+		else
+		{
+			$active_page = BWP_MINIFY_OPTION_ADVANCED;
+			$options = $bwp_option_page->get_db_options(
+				$active_page,
+				$bwp_option_page->get_options(array(
+					'input_fly_minpath',
+					'enable_fly_min',
+					'select_fly_serve_method'
+				), $this->options)
+			);
+		}
 
 		if (!empty($page))
 		{
@@ -554,7 +736,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				);
 
 				// Flush the cache
-				if (isset($_POST['flush_cache']) && !$this->is_normal_admin())
+				if (isset($_POST['flush_cache']) && !self::is_normal_admin())
 				{
 					check_admin_referer($page);
 
@@ -576,19 +758,121 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 						);
 				}
 			}
-			else if ($page == BWP_MINIFY_MANAGE)
+			else if ($page == BWP_MINIFY_OPTION_ADVANCED)
 			{
 				$bwp_option_page->set_current_tab(2);
+
+				// add a secondary button to clear detected groups
+				add_filter('bwp_option_submit_button', array($this, 'add_clear_group_button'));
+				if (isset($_POST['clear_group']))
+				{
+					check_admin_referer($page);
+
+					$this->detector->clear_logs('group');
+					$this->add_notice(
+						__('Minify groups have been cleared successfully. '
+						. 'Please try visiting a few pages on your site '
+						. 'and then refresh this page to see new file lists.', 'bwp-minify')
+					);
+				}
+
+				$form = array(
+					'items' => array(
+						'heading',
+						'checkbox',
+						'select',
+						'input',
+						'heading',
+						'input',
+						'input'
+					),
+					'item_labels' => array(
+						__('Friendly Minify Urls', 'bwp-minify'),
+						__('Enable friendly Minify urls', 'bwp-minify'),
+						__('Select method to serve', 'bwp-minify'),
+						__('Friendly path to minified file', 'bwp-minify'),
+						__('CDN settings', 'bwp-minify'),
+						__('CDN Host', 'bwp-minify'),
+						__('CDN Key', 'bwp-minify')
+					),
+					'item_names' => array(
+						'h1',
+						'cb1',
+						'select_fly_serve_method',
+						'input_fly_minpath',
+						'h2',
+						'input_cdn_host',
+						'input_cdn_key'
+					),
+					'heading' => array(
+						'h1' => sprintf(
+							__('Turn long and ugly Minify urls with '
+							. 'query variables (such as <code>%s</code>), '
+							. 'into more friendly ones (e.g. <code>%s</code>). '
+							. '', 'bwp-minify'),
+							trailingslashit($this->min_url)
+							. '?f=path/to/script1.js,path/to/script2.js',
+							home_url('min-assets/somestring.js')
+						),
+						'h2' => __('Basic support for CDN, require friendly '
+							. 'Minify urls to be enabled.', 'bwp-minify')
+					),
+					'select' => array(
+						'select_fly_serve_method' => array(
+							__('WordPress', 'bwp-minify') => 'wp',
+							__('Server rewrite rules', 'bwp-minify') => 'server'
+						)
+					),
+					'checkbox' => array(
+						'cb1' => array(
+							__('for CDN support you need to enable this feature', 'bwp-minify') => 'enable_fly_min'
+						),
+					),
+					'input' => array(
+						'input_fly_minpath' => array(
+							'size' => 55,
+							'label' => '<br />' . __('virtual path to minified files '
+								. 'relative to your website \'s root.', 'bwp-minify')
+						),
+						'input_cdn_host' => array(
+						),
+						'input_cdn_key' => array(
+						)
+					),
+					'container' => array(
+						'select_fly_serve_method' => '<em><strong>' . __('Important', 'bwp-minify') . ':</strong> '
+							. sprintf(
+								__('If you select WordPress as '
+								. 'your preferred method to serve friendly urls, '
+								. 'you must also enable WordPress\'s '
+								. '<a href="%s" target="_blank">Pretty Permalinks</a>.', 'bwp-minify'),
+								'http://codex.wordpress.org/Using_Permalinks#mod_rewrite:_.22Pretty_Permalinks.22'
+							) . '</em>'
+					),
+					'post' => array(
+						'blah' => '<em><br />'
+							. __('if you wish to use Wordpress '
+							. 'to serve friendly urls, you must enable WordPress '
+							. '\'s pretty permalinks feature.', 'bwp-minify')
+							. '</em>'
+					)
+				);
+
+				$form_options = array();
+			}
+			else if ($page == BWP_MINIFY_MANAGE)
+			{
+				$bwp_option_page->set_current_tab(3);
 
 				remove_action('bwp_option_action_before_form', array($this, 'show_donation'), 12);
 
 				// add a secondary button to clear enqueued file lists (both)
-				add_filter('bwp_option_submit_button', array($this, 'add_clear_log_button'));
-				if (isset($_POST['clear_log']))
+				add_filter('bwp_option_submit_button', array($this, 'add_clear_enqueue_button'));
+				if (isset($_POST['clear_enqueue']))
 				{
 					check_admin_referer($page);
 
-					$this->detector->clear_logs();
+					$this->detector->clear_logs('enqueue');
 					$this->add_notice(
 						__('Enqueued file lists have been cleared successfully. '
 						. 'Please try visiting a few pages on your site '
@@ -629,8 +913,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 							$this->plugin_url
 						)
 					),
-					'textarea' => array (
-					),
 					'container' => array(
 						'h1' => $this->_show_enqueued_scripts(),
 						'h2' => $this->_show_enqueued_styles(),
@@ -668,9 +950,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 			foreach ($options as $key => &$option)
 			{
-				if (!in_array($key, $form_options)
-					|| ($this->is_normal_admin()
-					&& in_array($key, $option_super_admin))
+				if ((0 < sizeof($form_options) && !in_array($key, $form_options))
+					|| (self::is_normal_admin() && in_array($key, $option_super_admin))
 				) {
 					// field not found in options assigned to current form
 					// OR not a super admin, and this is a super-admin only setting
@@ -679,42 +960,59 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				else
 				{
 					if (isset($_POST[$key]))
+					{
 						$bwp_option_page->format_field($key, $option_formats);
-					if (!isset($_POST[$key]) && !isset($form['input'][$key]['disabled']))
-						$option = '';
-					else if (isset($option_formats[$key]) && 0 == $_POST[$key] && 'int' == $option_formats[$key])
-						$option = 0;
-					else if (isset($option_formats[$key]) && empty($_POST[$key]) && 'int' == $option_formats[$key])
-						$option = $this->options_default[$key];
-					else if (!empty($_POST[$key]))
 						$option = trim(stripslashes($_POST[$key]));
-					else
+					}
+
+					if (!isset($_POST[$key])
+						&& !isset($form['input'][$key]['disabled'])
+					) {
+						// checkbox, exclude disabled input
 						$option = '';
+					}
+					else if (isset($option_formats[$key])
+						&& 'int' == $option_formats[$key]
+						&& ('' === $_POST[$key] || 0 > $_POST[$key])
+					) {
+						// expect integer but received empty string or negative integer
+						$option = $this->options_default[$key];
+					}
 				}
 			}
 
+			// other formatting applied to saved settings
+			if ($page == BWP_MINIFY_OPTION_ADVANCED)
+			{
+				// make sure friendly minify path is of expected format
+				$options['input_fly_minpath'] = $this->_sanitize_min_path(
+					false, $options['input_fly_minpath']
+				);
+			}
+
 			// update per-blog options
-			update_option(BWP_MINIFY_OPTION_GENERAL, $options);
+			update_option($active_page, $options);
 			// if current user is super admin, allow him to update site-only
 			// options - this is WPMS compatible
-			if (!$this->is_normal_admin())
-				update_site_option(BWP_MINIFY_OPTION_GENERAL, $options);
+			if (!self::is_normal_admin())
+				update_site_option($active_page, $options);
 
 			// refresh the options property to include updated options
 			$this->options = array_merge($this->options, $options);
 
-			if ($page == BWP_MINIFY_OPTION_GENERAL) {
-				$this->add_notice(__('All options have been saved.', 'bwp-minify'));
-			} else if ($page == BWP_MINIFY_MANAGE) {
+			// success messages when settings are saved
+			if ($page == BWP_MINIFY_MANAGE) {
 				$this->add_notice(
 					__('All positions have been saved. '
 					. 'Try visiting some pages on your site and then '
 					. 'refresh this page for updated file lists.', 'bwp-minify')
 				);
+			} else {
+				$this->add_notice(__('All options have been saved.', 'bwp-minify'));
 			}
 
-			// take care of some POST actions when we're on the General Options page
-			if ($page == BWP_MINIFY_OPTION_GENERAL && !$this->is_normal_admin())
+			// take care of some custom actions when form is submitted
+			if ($page == BWP_MINIFY_OPTION_GENERAL && !self::is_normal_admin())
 			{
 				// try to save the Minify config file
 				$result = $this->create_minify_config_file();
@@ -730,9 +1028,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				else if ('config' === $result)
 				{
 					// config file is missing
-					// TODO: should update to use `add_error` when all other
-					// plugins have been updated
-					$this->add_notice(
+					$this->add_error(
 						'<strong style="color:red">' . __('Error') . ':</strong> '
 						. __('Minify config file <code>config.php</code> is not found, '
 						. 'please try re-uploading or re-installing this plugin.', 'bwp-minify')
@@ -741,9 +1037,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				else if ('write' === $result)
 				{
 					// the write process failed for some reasons
-					// TODO: should update to use `add_error` when all other
-					// plugins have been updated
-					$this->add_notice(sprintf(
+					$this->add_error(sprintf(
 						'<strong style="color:red">' . __('Error') . ':</strong> '
 						. __('There was an error writing to Minify config file <code>%s</code>. '
 						. 'Please try again.', 'bwp-minify'),
@@ -765,6 +1059,24 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 					$form['container']['h2'] = $this->_show_generated_config($result);
 				}
 			}
+			else if ($page == BWP_MINIFY_OPTION_ADVANCED)
+			{
+				// friendly minify url is turned on, add our rewrite
+				// rules and flush the cached rules
+				if ('yes' != $original_options['enable_fly_min']
+					&& 'yes' == $this->options['enable_fly_min']
+				) {
+					$this->_add_rewrite_rules(true);
+				}
+
+				// if friendly min path or serve method is changed, we also
+				// need to update rewrite rules
+				if ($original_options['input_fly_minpath'] != $this->options['input_fly_minpath']
+					|| $original_options['select_fly_serve_method'] != $this->options['select_fly_serve_method']
+				) {
+					$this->_add_rewrite_rules(true);
+				}
+			}
 		}
 
 		// take care of non-POST actions when we're on General Options page
@@ -778,7 +1090,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			// warns admin that the cache directory is not writable
 			if (!empty($options['input_cache_dir'])
 				&& !is_writable($options['input_cache_dir'])
-				&& !$this->is_normal_admin()
+				&& !self::is_normal_admin()
 			) {
 				$this->add_notice(
 					'<strong>' . __('Warning') . ':</strong> '
@@ -798,7 +1110,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 			// Remove all Minify library-related settings if we're in multisite
 			// and this is not super-admin
-			if ($this->is_normal_admin())
+			if (self::is_normal_admin())
 				$bwp_option_page->kill_html_fields($form, array(7,8,9,10,11,12));
 		}
 
@@ -879,13 +1191,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		return $output;
 	}
 
-	function add_clear_log_button($button)
+	function add_clear_enqueue_button($button)
 	{
 		$button = str_replace(
 			'</p>',
 			'&nbsp; <input type="submit" class="button-secondary action" '
-				. 'name="clear_log" value="'
-				. __('Clear File Lists', 'bwp-simple-gxs') . '" /></p>',
+				. 'name="clear_enqueue" value="'
+				. __('Clear File Lists', 'bwp-minify') . '" /></p>',
+			$button);
+
+		return $button;
+	}
+
+	function add_clear_group_button($button)
+	{
+		$button = str_replace(
+			'</p>',
+			'&nbsp; <input type="submit" class="button-secondary action" '
+				. 'name="clear_group" value="'
+				. __('Clear Minify Groups', 'bwp-minify') . '" /></p>',
 			$button);
 
 		return $button;
@@ -914,7 +1238,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	{
 		global $current_blog;
 
-		if (!$this->is_multisite())
+		if (!self::is_multisite())
 			return '';
 
 		$blog_path = isset($current_blog->path) && '/' != $current_blog->path
@@ -1054,7 +1378,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		$min_dir  = trailingslashit($doc_root) . $min_path;
 		$min_dir  = trailingslashit($min_dir);
 
-		if (false == $this->is_multisite())
+		if (false == self::is_multisite())
 		{
 			// if this is NOT a multisite environment, and a `config.php` file
 			// exists, this is the Minify directory we're looking for
@@ -1077,8 +1401,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				// remove the current blog's path from the directory
 				// being checked and try again
 				$blog_path = $this->_get_blog_path();
+				$min_dir = !empty($blog_path)
+					? preg_replace('#' . $blog_path . '#ui', '/', $min_dir, 1)
+					: $min_dir;
 
-				$min_dir = preg_replace('#' . $blog_path . '#ui', '/', $min_dir, 1);
 				if (file_exists($min_dir . 'config.php'))
 				{
 					$this->min_dir = $min_dir;
@@ -1126,7 +1452,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			{
 				while (($file = readdir($dh)) !== false)
 				{
-					if (preg_match('/^minify_[a-z0-9_\-.,]+(\.gz)?$/i', $file))
+					if (preg_match('/^minify_[a-z0-9\\.=_,]+(\.gz)?$/ui', $file))
 					{
 						@unlink($cache_dir . $file);
 						$deleted++;
@@ -1288,6 +1614,16 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	}
 
 	/**
+	 * Makes sure handle created by this plugin is in expected format
+	 *
+	 * @return string
+	 */
+	private function _sanitize_handle($handle)
+	{
+		return preg_replace('/[^a-z0-9-_.]+/ui', '', $handle);
+	}
+
+	/**
 	 * Checks if media source is local
 	 *
 	 * @return bool
@@ -1366,8 +1702,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			// we need to remove blog path from `$src` as well, this is for
 			// compatibility with sub-directory multisite installation
 			$blog_path = $this->_get_blog_path();
+
 			$src = str_replace($site_url, '', $src);
-			$src = preg_replace('#' . $blog_path . '#ui', '/', $src, 1);
+			$src = !empty($blog_path)
+				? preg_replace('#' . $blog_path . '#ui', '/', $src, 1)
+				: $src;
 		}
 		else if ('/' === substr($src, 0, 1))
 		{
@@ -1399,7 +1738,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 	 *
 	 * @return string
 	 */
-	function get_minify_src($string)
+	function get_minify_src($string, $group_handle = '')
 	{
 		if (empty($string))
 			return '';
@@ -1409,7 +1748,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 		return apply_filters('bwp_get_minify_src',
 			trailingslashit($min_url) . '?f=' . $string . $buster,
-			$string, $buster, $min_url
+			$string, $group_handle, $buster, $min_url
 		);
 	}
 
@@ -1418,8 +1757,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 		if (!isset($group['string']))
 			return '';
 
-		$string = implode(',', $group['string']);
-		$string = $this->get_minify_src($string);
+		$original_string = implode(',', $group['string']);
+		$string = $this->get_minify_src($original_string, $group_handle);
+
 		$media  = isset($group['media']) ? $group['media'] : false;
 		$title  = isset($group['alt']) ? $group['alt'] : false;
 		$if     = isset($group['if']) ? $group['if'] : false;
@@ -1430,23 +1770,23 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				$return  = "<script type='text/javascript' src='"
 					. esc_url($string)
 					. "'></script>\n";
-			break;
+				break;
 
 			case 'style':
 				$return = "<link rel='stylesheet' id='"
-					. $group_handle . "-group-css' href='"
+					. esc_attr($group_handle) . "-group-css' href='"
 					. esc_url($string) . "' type='text/css' media='"
 					. esc_attr($media) . "' />\n";
 
 				if ($title)
 				{
 					$return = "<link rel='alternate stylesheet' id='"
-						. $group_handle . "-group-css' title='"
+						. esc_attr($group_handle) . "-group-css' title='"
 						. esc_attr($title) . "' href='"
 						. esc_url($string) . "' type='text/css' media='"
 						. esc_attr($media) . "' />\n";
 				}
-			break;
+				break;
 		}
 
 		if ($if)
@@ -1591,7 +1931,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 
 		foreach ($todo as $handle => $item)
 		{
-			$group_handle = $handle;
+			$group_handle = $this->_sanitize_handle($handle);
 
 			// only process item that is not in any group yet
 			if ($item['group'])
@@ -1796,7 +2136,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			{
 				// because WordPress needs original $src, we process the
 				// original $style->src, not the pre-processed $src.
-				$style->src = $this->get_minify_src($this->process_media_source($style->src));
+				$style->src = $this->get_minify_src(
+					$this->process_media_source($style->src),
+					$group_handle
+				);
 				$style->ver = NULL;
 				// add a new group to hold this item
 				$this->min_styles[$group_handle] = array(
@@ -1857,7 +2200,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				else
 				{
 					// otherwise make a new group
-					$group_handle = $handle;
+					$group_handle = $this->_sanitize_handle($handle);
 					$this->min_styles[$group_handle] = array(
 						'depend' => $group_deps,
 						'string' => array($src),
@@ -2151,7 +2494,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 			{
 				// if WordPress handles this item make sure the $src is
 				// processed and version is not set
-				$script->src = $this->get_minify_src($src);
+				$script->src = $this->get_minify_src($src, $group_handle);
 				$script->ver = NULL;
 				// add a new group to hold this item
 				$this->min_scripts[$group_handle] = array(
@@ -2202,7 +2545,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK
 				else
 				{
 					// otherwise make a new group
-					$group_handle = $handle;
+					$group_handle = $this->_sanitize_handle($handle);
 					$this->min_scripts[$group_handle] = array(
 						'depend' => $group_deps,
 						'string' => array($src),
