@@ -47,7 +47,7 @@ jQuery(function($) {
 		var input = 'input_' + position;
 		var $i = $('.bwp-sidebar :input[name="' + input + '"]');
 		var input_handle = $i.parent().find('.position-handle')[0];
-		var input_val = '' == $i.val() ? '' : $i.val() + "\n";
+		var input_val = '' == $i.val() ? '' : $i.val() + "\r\n";
 
 		$i.val(input_val + handle);
 		$t.parent().hide();

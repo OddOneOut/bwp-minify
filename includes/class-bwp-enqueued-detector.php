@@ -28,6 +28,12 @@ class BWP_Enqueued_Detector
 
 	private $_groups = array();
 
+	private $_script_count = 0;
+
+	private $_style_count = 0;
+
+	private $_group_count = 0;
+
 	private $_version = '1.0.0';
 
 	public function __construct($options, $domain)
@@ -61,9 +67,11 @@ class BWP_Enqueued_Detector
 			'src'      => $item['src'],
 			'depend'   => $item['depend'],
 			'position' => $this->_get_position($item),
+			'order'    => $this->_get_position_order($item),
 			'group'    => $item['group']
 		);
 
+		$this->_script_count++;
 		$this->_log('script', $log_data);
 	}
 
@@ -90,10 +98,12 @@ class BWP_Enqueued_Detector
 			'src'      => $item['src'],
 			'depend'   => $item['depend'],
 			'position' => $this->_get_position($item),
+			'order'    => $this->_get_position_order($item),
 			'group'    => $item['group'],
 			'media'    => $item['media']
 		);
 
+		$this->_style_count++;
 		$this->_log('style', $log_data);
 	}
 
@@ -114,8 +124,11 @@ class BWP_Enqueued_Detector
 			'handle' => $group_handle . '-' . substr($hash, 0, 15),
 			'string' => $string,
 			'type'   => $group_type,
+			'order'  => $this->_group_count,
 			'hash'   => $hash
 		));
+
+		$this->_group_count++;
 	}
 
 	public function get_group($group_handle, $from_db = false)
@@ -175,6 +188,7 @@ class BWP_Enqueued_Detector
 			'action'   => __('Actions', $this->_domain)
 		);
 
+		uasort($this->_scripts, array($this, 'sort_item'));
 		$this->_show_log('script', $headings);
 	}
 
@@ -188,7 +202,19 @@ class BWP_Enqueued_Detector
 			'action'   => __('Actions', $this->_domain)
 		);
 
+		uasort($this->_styles, array($this, 'sort_item'));
 		$this->_show_log('style', $headings);
+	}
+
+	public function sort_item($a, $b)
+	{
+		if (!isset($a['order']) || !isset($b['order']))
+			return 0;
+
+		if ($a['order'] == $b['order'])
+			return 0;
+
+		return $a['order'] < $b['order'] ? -1 : 1;
 	}
 
 	public function clear_logs($type = 'enqueue')
@@ -301,9 +327,11 @@ class BWP_Enqueued_Detector
 					continue;
 
 				if ('src' == $key)
-					$value = '<input readonly="readonly" type="text" value="'
-						. esc_attr($item[$key])
-						. '" />';
+					$value = '<input readonly="readonly" type="text" '
+						. 'value="' . esc_attr($item[$key]) . '" />';
+				else if ('handle' == $key)
+					$value = '<input readonly="readonly" type="text" style="width: 130px;" '
+						. 'value="' . esc_attr($item[$key]) . '" />';
 				else
 					$value = esc_html($item[$key]);
 ?>
@@ -388,6 +416,32 @@ class BWP_Enqueued_Detector
 				? __('forgotten', $this->_domain)
 				: sprintf(__('ignored in %s', $this->_domain), $position);
 		}
+	}
+
+	private function _get_position_order($item)
+	{
+		// order of positions: header, separate in header, ignore in header,
+		// footer{n}, separate in footer{n}, ignore in footer{n}, oblivion
+		$orders = array(
+			'1_0_header' => 0,
+			'1_1_header' => 1,
+			'0_0_header' => 2,
+			'0_1_header' => 2,
+			'1_0_footer' => 3,
+			'1_1_footer' => 4,
+			'0_0_footer' => 5,
+			'0_1_footer' => 5,
+			'1_1_oblivion' => 6,
+			'1_0_oblivion' => 6,
+			'0_1_oblivion' => 6,
+			'0_0_oblivion' => 6
+		);
+		$order = 0;
+
+		$order = (int) $item['min'] . '_' . (int) $item['wp'] . '_' . $item['position'];
+		$order = $orders[$order];
+
+		return $order;
 	}
 
 	private function _log($type, $data)

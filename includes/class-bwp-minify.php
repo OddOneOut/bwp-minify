@@ -71,14 +71,23 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	/**
 	 * Other options
 	 */
-	var $ver = '', $base = '', $buster = '', $cache_age = 7200;
+	var $ver = '', $base = '', $remove_from_base = '', $buster = '', $cache_age = 7200;
+	var $min_url = '', $min_dir = '', $min_path = '', $min_cache_dir = '';
+	var $doc_root = '';
 
 	/**
 	 * Holds the extracted HTTP Host
 	 *
 	 * @since 1.3.0
 	 */
-	var $http_host = '', $min_url = '', $min_dir = '';
+	var $http_host = '';
+
+	/**
+	 * Default properties used throughout the plugin
+	 *
+	 * @since 1.3.0
+	 */
+	var $default_min_path = '';
 
 	/**
 	 * Rewrite rules used for friendly minify url
@@ -116,7 +125,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	/**
 	 * Constructor
 	 */
-	function __construct($version = '1.2.3')
+	function __construct($version = '1.3.0')
 	{
 		// Plugin's title
 		$this->plugin_title = 'BetterWP Minify';
@@ -132,8 +141,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'input_minurl' => '', // @deprecated 1.3.0 replaced by input_minpath
 			'input_minpath' => '',
 			'input_cache_dir' => '', // super admin, Minify
-			'input_fly_minpath' => '/min-assets/', // @since 1.3.0, `fly` stands for friendly
 			'input_doc_root' => '', // @since 1.3.0 super admin, Minify
+			'input_fly_minpath' => '/min-assets/', // @since 1.3.0, `fly` stands for friendly
 			'input_maxfiles' => 10,
 			'input_maxage' => 2, // super admin, Minify
 			'input_ignore' => 'admin-bar',
@@ -141,7 +150,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'input_direct' => '',
 			'input_footer' => '',
 			'input_oblivion' => '',
-			'input_style_ignore' => 'admin-bar' . "\n" . 'dashicons',
+			'input_style_ignore' => 'admin-bar' . "\r\n" . 'dashicons',
 			'input_style_direct' => '',
 			'input_style_oblivion' => '',
 			'input_custom_buster' => '',
@@ -155,9 +164,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'select_time_type' => 3600, // super admin, Minify
 			'select_fly_serve_method' => 'wp' // @since 1.3.0
 		);
-
-		// this default option requires some work
-		add_action('bwp_minify_pre_init', array($this, 'default_minpath'));
 
 		// super admin only options
 		$this->site_options = array(
@@ -194,10 +200,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$this->_add_rewrite_rules(true);
 	}
 
+	function upgrade_plugin($from, $to)
+	{
+		if ($to == '1.3.0')
+		{
+			// @since 1.3.0 default values of min path and cache dir is empty
+			$options = get_option(BWP_MINIFY_OPTION_GENERAL);
+			$this->_reset_min_path($options);
+			$this->_reset_cache_dir($options);
+			update_option(BWP_MINIFY_OPTION_GENERAL, $options);
+		}
+	}
+
 	function pre_init_properties()
 	{
 		$this->parse_positions();
 		$this->ver = get_bloginfo('version');
+		$this->http_host = $this->_get_http_host();
+
+		// rewrite rules for friendly minify urls
 		$this->rewrite_rules = array(
 			'wp' => array(
 				'pattern' => 'minify-group-([a-zA-Z0-9-_.]+)\.(js|css)$',
@@ -214,51 +235,285 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		require_once dirname(__FILE__) . '/class-bwp-minify-fetcher.php';
 	}
 
-	/**
-	 * Sets a default Minify path when WordPress finishes initializing its core
-	 *
-	 * @return void
-	 */
-	function default_minpath()
+	private function _reset_min_path(&$options = false)
 	{
-		// @since 1.3.0 we get a path relative to root for Minify instead of an
-		// absolute URL to add compatibility to staging or mirror site.
-		$plugin_wp_url = $this->plugin_wp_url;
+		$options = false == $options ? $this->options : $options;
+		if ($options['input_minpath'] == $this->get_default_min_path())
+			$options['input_minpath'] = '';
+	}
 
+	private function _reset_cache_dir(&$options = false)
+	{
+		$options = false == $options ? $this->options : $options;
+		if ($options['input_cache_dir'] == $this->get_default_cache_dir())
+			$options['input_cache_dir'] = '';
+	}
+
+	/**
+	 * Makes sure handle created by this plugin is in expected format
+	 *
+	 * @return string
+	 */
+	private function _sanitize_handle($handle)
+	{
+		return preg_replace('/[^a-z0-9-_.]+/ui', '', $handle);
+	}
+
+	private function _sanitize_min_path($left_trim = false, $min_path = false)
+	{
+		$min_path = !$min_path ? $this->options['input_fly_minpath'] : $min_path;
+		$min_path = trailingslashit($min_path);
+		$min_path = str_replace('\\', '/', $min_path);
+		$min_path = $left_trim ? ltrim($min_path, '/') : $min_path;
+
+		return $min_path;
+	}
+
+	/**
+	 * Gets blog path for the current blog in a multisite installation
+	 *
+	 * @return string
+	 */
+	private function _get_blog_path()
+	{
+		global $current_blog;
+
+		if (!self::is_multisite())
+			return '';
+
+		$blog_path = isset($current_blog->path) && '/' != $current_blog->path
+			? $current_blog->path
+			: '';
+
+		// because `$blog_path` also contains the base, we need to remove the
+		// base from it so we can process media source correctly later on
+		if (!empty($this->base) && 0 === strpos($blog_path, '/' . $this->base . '/'))
+			$blog_path = preg_replace('#/[^/]+#ui', '', $blog_path, 1);
+
+		return $blog_path;
+	}
+
+	private function _get_http_host()
+	{
+		$home_url = home_url();
 		$http_host = '';
 		$matches = array();
 
-		if (false !== preg_match('#^https?://[^/]+#ui', $plugin_wp_url, $matches))
+		// Gets the http host part of the wp url
+		if (false !== preg_match('#^https?://[^/]+#ui', $home_url, $matches))
 		{
 			$http_host = $matches[0];
 		}
 		else
 		{
-			$url = @parse_url($plugin_wp_url);
+			$url = @parse_url($home_url);
 			$http_host = $url['scheme'] . '://' . $url['host'];
 			$http_host = !empty($url['port'])
 				? $http_host . ':' . $url['port']
 				: $http_host;
 		}
 
-		$this->http_host = $http_host;
-		$min_path = str_replace($http_host, '', $plugin_wp_url);
-		$min_path = apply_filters('bwp_minify_min_dir', $min_path . 'min/');
+		return $http_host;
+	}
 
-		$this->options_default['input_minpath'] = apply_filters(
-			'bwp_minify_min_path', $min_path
-		);
+	private function _guess_min_dir()
+	{
+		$min_path = $this->get_min_path();
+		$min_path = trim($min_path, '/');
+		$doc_root = trailingslashit($this->get_doc_root());
+
+		// min directory is guessed using current document root
+		$min_dir  = $doc_root . $min_path;
+		$min_dir  = trailingslashit($min_dir);
+
+		// if min directory does not exist, and a tilde (`~`) is found in
+		// base, it is very possible that mod user_dir is being used, try
+		// to remove the ~username dir from min_path and see if that works
+		if (!file_exists($min_dir))
+		{
+			$min_dir = preg_match('#^~[^/]+/#ui', $min_path, $matches)
+				? preg_replace('#^~[^/]+/#ui', '', $min_path, 1)
+				: false;
+
+			if (false == $min_dir)
+				return false;
+
+			$min_dir = trailingslashit($doc_root . $min_dir);
+			$this->remove_from_base = trim($matches[0], '/');
+		}
+
+		return $min_dir;
+	}
+
+	/**
+	 * Detects the default path to Minify library
+	 *
+	 * @since 1.3.0
+	 * @return string
+	 */
+	function get_default_min_path()
+	{
+		if (!empty($this->default_min_path))
+			return $this->default_min_path;
+
+		// @since 1.3.0 we get a path relative to root for Minify instead of an
+		// absolute URL to add compatibility to staging or mirror site.
+		$min_path = str_replace($this->http_host, '', $this->plugin_wp_url);
+		$min_path = apply_filters('bwp_minify_min_dir', $min_path . 'min/');
+		$min_path = apply_filters('bwp_minify_min_path', $min_path);
+
+		$this->default_min_path = $min_path;
+		return $min_path;
+	}
+
+	/**
+	 * Gets path to Minify library, either default or from admin input
+	 *
+	 * @since 1.3.0
+	 * @return string
+	 */
+	function get_min_path()
+	{
+		return empty($this->options['input_minpath'])
+			? $this->get_default_min_path()
+			: $this->options['input_minpath'];
+	}
+
+	/**
+	 * Gets the directory where Minify library lives
+	 *
+	 * @since 1.3.0
+	 * @return string|bool false if no directory can be found
+	 */
+	function get_min_dir()
+	{
+		if (!empty($this->min_dir))
+			return $this->min_dir;
+
+		// if min path is the default one, the task is easy
+		if (empty($this->options['input_minpath'])
+			|| $this->options['input_minpath'] == $this->get_default_min_path()
+		) {
+			$plugin_wp_dir = trailingslashit(plugin_dir_path($this->plugin_file));
+			$min_dir = $plugin_wp_dir . 'min/';
+		}
+		else
+		{
+			$min_dir = $this->_guess_min_dir();
+			// guessing failed
+			if (false == $min_dir)
+				return false;
+		}
+
+		if (false == self::is_multisite())
+		{
+			// if this is NOT a multisite environment, and a `config.php` file
+			// exists, this is the Minify directory we're looking for
+			if (file_exists($min_dir . 'config.php'))
+			{
+				$this->min_dir = $min_dir;
+				return $min_dir;
+			}
+			else
+				return false;
+		}
+		else
+		{
+			// if we're in a multi-site environment, we look for Minify's
+			// directory in current blog first, and then main blog, and use
+			// the first directory that is found
+			if (!file_exists($min_dir . 'config.php'))
+			{
+				// current blog's Minify directory doesn't seem to exist,
+				// remove the current blog's path from the directory
+				// being checked and try again
+				$blog_path = $this->_get_blog_path();
+				$min_dir = !empty($blog_path)
+					? preg_replace('#' . $blog_path . '#ui', '/', $min_dir, 1)
+					: $min_dir;
+
+				if (file_exists($min_dir . 'config.php'))
+				{
+					$this->min_dir = $min_dir;
+					return $min_dir;
+				}
+
+				// fail with no fallback, admin must set it manually
+				return false;
+			}
+			else
+			{
+				$this->min_dir = $min_dir;
+				return $min_dir;
+			}
+		}
+	}
+
+	/**
+	 * Gets WordPress document root or document root from admin input
+	 *
+	 * @since 1.3.0
+	 * @return string
+	 */
+	function get_doc_root($path = '')
+	{
+		$server_doc_root = $_SERVER['DOCUMENT_ROOT'];
+		$wp_doc_root = dirname(WP_CONTENT_DIR);
+
+		$doc_root = empty($server_doc_root) || 0 !== strpos($wp_doc_root, $server_doc_root)
+			? $wp_doc_root : $server_doc_root;
+
+		$doc_root = !empty($this->options['input_doc_root'])
+			? $this->options['input_doc_root']
+			: $doc_root;
+
+		return !empty($path)
+			? trailingslashit($doc_root) . ltrim($path, '/')
+			: $doc_root;
+	}
+
+	/**
+	 * Gets default cache dir based on this plugin's dir
+	 *
+	 * @since 1.3.0
+	 * @return string
+	 */
+	function get_default_cache_dir()
+	{
+		$plugin_wp_dir = plugin_dir_path($this->plugin_file);
+		$cache_dir = trailingslashit($plugin_wp_dir) . 'cache/';
+		$cache_dir = str_replace('\\', '/', $cache_dir);
+
+		return $cache_dir;
+	}
+
+	/**
+	 * Gets the current cache directory based on min path or admin input
+	 *
+	 * The default cache directory is `/min/cache/` which can be changed inside
+	 * admin area if `/min/config.php` file is writable (@since 1.3.0).
+	 */
+	function get_cache_dir()
+	{
+		// return the cache dir as entered by admin
+		// or if cache dir is empty, get cache directory from plugin
+		// directory, i.e. `bwp-minify/cache`, this is the default
+		$cache_dir = !empty($this->options['input_cache_dir'])
+			? $this->options['input_cache_dir']
+			: $this->get_default_cache_dir();
+
+		return apply_filters('bwp_minify_cache_dir_dir', $cache_dir);
 	}
 
 	function init_properties()
 	{
-		$this->get_base();
-		$this->options['input_cache_dir'] = empty($this->options['input_cache_dir'])
-			? $this->get_cache_dir()
-			: $this->options['input_cache_dir'];
+		$this->min_path = $this->get_min_path();
+		$this->min_cache_dir = $this->get_cache_dir();
+		$this->min_url = trailingslashit($this->http_host) . ltrim($this->min_path, '/');
+		$this->doc_root = $this->get_doc_root();
 
+		$this->get_base();
 		$this->buster = $this->get_buster($this->options['select_buster_type']);
-		$this->min_url  = trailingslashit($this->http_host) . ltrim($this->options['input_minpath'], '/');
 
 		// init the detector class, responsible for detecting and logging
 		// enqueued files
@@ -298,7 +553,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 		if ('server' == $this->options['select_fly_serve_method'])
 		{
-			// add server rewrite rules 
+			// add server rewrite rules
 		}
 
 		return $rules;
@@ -314,16 +569,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$min_path . 'minify-([a-zA-Z0-9-_.]+)-group\.(js|css)$',
 			'index.php?minify_group=$matches[1]&minify_type=$matches[2]'
 		);
-	}
-
-	private function _sanitize_min_path($left_trim = false, $min_path = false)
-	{
-		$min_path = !$min_path ? $this->options['input_fly_minpath'] : $min_path;
-		$min_path = trailingslashit($min_path);
-		$min_path = str_replace('\\', '/', $min_path);
-		$min_path = $left_trim ? ltrim($min_path, '/') : $min_path;
-
-		return $min_path;
 	}
 
 	private function _add_rewrite_rules($flush = false)
@@ -434,7 +679,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 	}
 
-	function add_hooks()
+	function pre_init_hooks()
 	{
 		// add rewrite rules for friendly minify url if needed
 		if ('yes' == $this->options['enable_fly_min'])
@@ -442,6 +687,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 		// check and update Minify config file whenever this plugin is updated
 		add_action('upgrader_process_complete', array($this, 'check_minify_config_file'), 10, 2);
+
+		// check and update plugin db if needed, this is fired after init
+		add_action('bwp_minify_init_upgrade', array($this, 'upgrade_plugin'), 10, 2);
 
 		if (false === strpos($_SERVER['REQUEST_URI'], 'wp-login.php')
 			&& false === strpos($_SERVER['REQUEST_URI'], 'wp-signup.php'))
@@ -595,11 +843,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						__('Minify JS files automatically?', 'bwp-minify'),
 						__('Minify CSS files automatically?', 'bwp-minify'),
 						__('Minify <code>bloginfo()</code> stylesheets?', 'bwp-minify'),
-						__('Minify Path', 'bwp-minify'),
+						__('URL path to Minify library (relative to domain root)', 'bwp-minify'),
 						__('One minify string will contain', 'bwp-minify'),
 						__('Append the minify string with', 'bwp-minify'),
 						__('Minify Library Settings', 'bwp-minify'),
-						__('Document root', 'bwp-minify'),
+						__('WordPress document root', 'bwp-minify'),
 						__('Cache directory', 'bwp-minify'),
 						__('Cache age', 'bwp-minify'),
 						__('Enable bubble CSS import?', 'bwp-minify'),
@@ -653,30 +901,26 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					'input' => array(
 						'input_minpath' => array(
 							'size' => 55,
-							'label' => sprintf(
-								__('This should be set automatically. '
+							'label' => '<br />' . sprintf(
+								__('Leave empty to use default value, which is <code>%s</code>.<br />'
 								. 'Please read <a href="%s#customization">here</a> '
 								. 'to know how to properly modify this.', 'bwp-minify'),
-								$this->plugin_url)
+								$this->get_default_min_path(), $this->plugin_url)
 						),
 						'input_doc_root' => array(
 							'size' => 55,
-							'label' => '<br />' . __('Leave empty '
-								. 'to use PHP\'s <code>$_SERVER[\'DOCUMENT_ROOT\']</code>. '
-								. 'On some servers the document root is '
-								. 'misconfigured or missing, in that case you must '
-								. 'set this to your full document root directory '
-								. 'with NO trailing slash.', 'bwp-minify')
+							'label' => '<br />' . $this->_get_input_doc_root_label()
 						),
 						'input_cache_dir' => array(
 							'size' => 55,
 							'label' => '<br />' . sprintf(
-								__('Expect a full path to your desired cache directory. '
-								. 'More details can be found '
-								. '<a href="%s#advanced_customization" target="_blank">here</a>. '
+								__('Expect a full path to your desired cache directory. <br />'
+								. 'Leave empty to use default value, which is <code>%s</code>.<br />'
 								. 'Cache directory must be writable '
-								. '(i.e. CHMOD to 755 or 777).', 'bwp-minify'),
-								$this->plugin_url)
+								. '(i.e. CHMOD to 755 or 777). '
+								. 'More details can be found '
+								. '<a href="%s#advanced_customization" target="_blank">here</a>. ', 'bwp-minify'),
+								$this->get_cache_dir(), $this->plugin_url)
 						),
 						'input_maxfiles' => array(
 							'size' => 3,
@@ -740,7 +984,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				{
 					check_admin_referer($page);
 
-					$deleted = self::_flush_cache($options['input_cache_dir']);
+					$deleted = self::_flush_cache();
 					if (0 < $deleted)
 						$this->add_notice(
 							'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
@@ -825,7 +1069,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					),
 					'checkbox' => array(
 						'cb1' => array(
-							__('for CDN support you need to enable this feature', 'bwp-minify') => 'enable_fly_min'
+							__('for CDN support it is highly recommended that you enable this feature.', 'bwp-minify') => 'enable_fly_min'
 						),
 					),
 					'input' => array(
@@ -990,6 +1234,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				);
 			}
 
+			// TODO: reset minpath and cache_dir before saved to DB
 			// update per-blog options
 			update_option($active_page, $options);
 			// if current user is super admin, allow him to update site-only
@@ -1030,8 +1275,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// config file is missing
 					$this->add_error(
 						'<strong style="color:red">' . __('Error') . ':</strong> '
-						. __('Minify config file <code>config.php</code> is not found, '
-						. 'please try re-uploading or re-installing this plugin.', 'bwp-minify')
+						. sprintf(
+							__('Minify config file <code>config.php</code> could not be found. '
+							. 'The auto-detected directory to look for the config file is <code>%s</code>. '
+							. 'Please manually check if that directory actually exists '
+							. 'and contains the config file.', 'bwp-minify'),
+							$this->get_doc_root($this->get_min_path())
+						)
 					);
 				}
 				else if ('write' === $result)
@@ -1088,6 +1338,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				unset($form['input']['input_custom_buster']['disabled']);
 
 			// warns admin that the cache directory is not writable
+			// TODO: distinguish between exist and not writable
 			if (!empty($options['input_cache_dir'])
 				&& !is_writable($options['input_cache_dir'])
 				&& !self::is_normal_admin()
@@ -1102,11 +1353,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					)
 				);
 			}
-
-			// Guessing the cache directory based on updated min path
-			$options['input_cache_dir'] = empty($options['input_cache_dir'])
-				? $this->get_cache_dir($options['input_minpath'])
-				: $options['input_cache_dir'];
 
 			// Remove all Minify library-related settings if we're in multisite
 			// and this is not super-admin
@@ -1215,6 +1461,48 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return $button;
 	}
 
+	private function _get_input_doc_root_label()
+	{
+		$doc_root = $_SERVER['DOCUMENT_ROOT'];
+		$wp_doc_root = dirname(WP_CONTENT_DIR);
+
+		// if server document root is empty, or is invalid (i.e. WordPress
+		// does not live under it), we use WordPress document root
+		if (empty($doc_root) || 0 !== strpos($wp_doc_root, $doc_root))
+		{
+			return sprintf(
+				__('Leave empty to use parent directory of <code>wp-content</code>, '
+				. 'which is <code>%s</code>. '
+				. 'If you want to include JS and CSS files '
+				. 'outside of this root, or you happen to move '
+				. '<code>wp-content</code> directory somewhere else, '
+				. 'make sure you set this to the correct directory '
+				. 'with NO trailing slash. '
+				. 'This setting is very important as it makes sure that Minify library '
+				. 'can correctly locate your JS, CSS files. '
+				. 'More info can be found <a href="%s#minify_document_root" '
+				. 'target="_blank">here</a>.', 'bwp-minify'),
+				dirname(WP_CONTENT_DIR), $this->plugin_url
+			);
+		}
+		else
+		{
+			return sprintf(
+				__('Leave empty to use <code>$_SERVER[\'DOCUMENT_ROOT\']</code>, '
+				. 'which is <code>%s</code>. This is only used when '
+				. 'it is not empty and your WordPress does live under it.<br />'
+				. 'If you believe the auto-detected document root is wrong, '
+				. 'make sure you set it to the correct directory '
+				. 'with NO trailing slash. <br />'
+				. 'This setting is very important as it makes sure that Minify '
+				. 'can correctly locate your JS, CSS files. '
+				. 'More info can be found <a href="%s#minify_document_root" '
+				. 'target="_blank">here</a>.', 'bwp-minify'),
+				$_SERVER['DOCUMENT_ROOT'],  $this->plugin_url
+			);
+		}
+	}
+
 	private function _show_generated_config($contents)
 	{
 		$output  = __('Could not write Minify library settings to <code>%s</code>. '
@@ -1227,30 +1515,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			. '</textarea>';
 
 		return $output;
-	}
-
-	/**
-	 * Gets blog path for the current blog in a multisite installation
-	 *
-	 * @return string
-	 */
-	private function _get_blog_path()
-	{
-		global $current_blog;
-
-		if (!self::is_multisite())
-			return '';
-
-		$blog_path = isset($current_blog->path) && '/' != $current_blog->path
-			? $current_blog->path
-			: '';
-
-		// because `$blog_path` also contains the base, we need to remove the
-		// base from it so we can process media source correctly later on
-		if (0 === strpos($blog_path, '/' . $this->base . '/'))
-			$blog_path = preg_replace('#/[^/]+#ui', '', $blog_path, 1);
-
-		return $blog_path;
 	}
 
 	/**
@@ -1272,16 +1536,21 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$options = $this->options;
 
 		// prepare config entry that can be changed
-		$min_cachePath = $options['input_cache_dir'] == $this->get_cache_dir()
-			|| empty($options['input_cache_dir'])
+		$min_cachePath = empty($options['input_minpath'])
+			&& empty($options['input_cache_dir'])
 			? 'dirname(dirname(__FILE__)) . \'/cache\''
-			: "'" . $options['input_cache_dir'] . "'";
+			: "'" . untrailingslashit($this->get_cache_dir()) . "'";
+
 		$min_cacheFileLocking = 'yes' == $options['enable_cache_file_lock']
 			? 'true' : 'false';
 		$min_bubbleCssImports = 'yes' == $options['enable_css_bubble']
 			? 'true' : 'false';
 		$min_maxAge = (int) $options['input_maxage'] * (int) $options['select_time_type'];
-		$min_documentRoot = "'" . untrailingslashit($options['input_doc_root']) . "'";
+
+		$doc_root = $this->get_doc_root();
+		$min_documentRoot = $_SERVER['DOCUMENT_ROOT'] != $doc_root
+			? "'" . untrailingslashit($this->get_doc_root()) . "'"
+			: "''";
 
 		$configs = array(
 			'min_enableBuilder' => 'false',
@@ -1319,7 +1588,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			return 'config';
 
 		$config_file = $min_dir . 'config.php';
-
 		if (is_writable($config_file))
 		{
 			// write Minify config variable to `config.php` file
@@ -1357,93 +1625,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$result = $this->create_minify_config_file();
 	}
 
-	/**
-	 * Gets the directory where Minify library lives
-	 *
-	 * @since 1.3.0
-	 * @return string|bool false if no directory can be found
-	 */
-	function get_min_dir()
-	{
-		if (!empty($this->min_dir))
-			return $this->min_dir;
-
-		$min_path = $this->options['input_minpath'];
-		$min_path = ltrim($min_path, '/');
-
-		$doc_root = !empty($this->options['input_doc_root'])
-			? trim($this->options['input_doc_root'])
-			: $_SERVER['DOCUMENT_ROOT'];
-
-		$min_dir  = trailingslashit($doc_root) . $min_path;
-		$min_dir  = trailingslashit($min_dir);
-
-		if (false == self::is_multisite())
-		{
-			// if this is NOT a multisite environment, and a `config.php` file
-			// exists, this is the Minify directory we're looking for
-			if (file_exists($min_dir . 'config.php'))
-			{
-				$this->min_dir = $min_dir;
-				return $min_dir;
-			}
-			else
-				return false;
-		}
-		else
-		{
-			// if we're in a multi-site environment, we look for Minify's
-			// directory in current blog first, and then main blog, and use
-			// the first directory that is found
-			if (!file_exists($min_dir . 'config.php'))
-			{
-				// current blog's Minify directory doesn't seem to exist,
-				// remove the current blog's path from the directory
-				// being checked and try again
-				$blog_path = $this->_get_blog_path();
-				$min_dir = !empty($blog_path)
-					? preg_replace('#' . $blog_path . '#ui', '/', $min_dir, 1)
-					: $min_dir;
-
-				if (file_exists($min_dir . 'config.php'))
-				{
-					$this->min_dir = $min_dir;
-					return $min_dir;
-				}
-
-				return false;
-			}
-			else
-			{
-				$this->min_dir = $min_dir;
-				return $min_dir;
-			}
-		}
-	}
-
-	/**
-	 * Gets (guess) the current cache directory based on min path
-	 *
-	 * The default cache directory is `/min/cache/` which can be changed inside
-	 * admin area if `/min/config.php` file is writable (@since 1.3.0).
-	 */
-	function get_cache_dir($min_path = '')
-	{
-		$guess_cache = $this->get_min_dir();
-
-		if (false == $guess_cache)
-			// could not get Minify's directory, let admin manually set it
-			return '';
-
-		$guess_cache = dirname($guess_cache) . '/cache/';
-		$guess_cache = str_replace('\\', '/', $guess_cache);
-
-		return apply_filters('bwp_minify_cache_dir', $guess_cache);
-	}
-
-	private static function _flush_cache($cache_dir)
+	private static function _flush_cache($cache_dir = '')
 	{
 		$deleted = 0;
+		$cache_dir = !empty($cache_dir) ? $cache_dir : $this->get_cache_dir();
 		$cache_dir = trailingslashit($cache_dir);
 
 		if (is_dir($cache_dir))
@@ -1482,7 +1667,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		{
 			if (!empty($position))
 			{
-				$position = explode("\n", $position);
+				$position = preg_split('/\r\n|[\r\n]/', $position);
 				$position = array_map('trim', $position);
 			}
 			$filter = false === strpos($key, 'style_') ? '_script_' : '_';
@@ -1506,7 +1691,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	{
 		$site_url = get_site_option('siteurl');
 		$base = trim(str_replace($this->http_host, '', $site_url), '/');
-		$this->base = $base;
+
+		// @since 1.3.0 - guess min dir to check for any dir that we have to
+		// remove from the base
+		$this->_guess_min_dir();
+
+		$this->base = !empty($this->remove_from_base)
+			? preg_replace('#^' . $this->remove_from_base . '/?#ui', '', $base, 1)
+			: $base;
 	}
 
 	/**
@@ -1521,8 +1713,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		switch ($type)
 		{
 			case 'mtime':
-				if (file_exists($this->options['input_cache_dir']))
-					$buster = filemtime($this->options['input_cache_dir']);
+				$cache_dir = trailingslashit($this->get_cache_dir());
+				if (file_exists($cache_dir))
+					$buster = filemtime($cache_dir);
 			break;
 
 			case 'wpver':
@@ -1614,16 +1807,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	}
 
 	/**
-	 * Makes sure handle created by this plugin is in expected format
-	 *
-	 * @return string
-	 */
-	private function _sanitize_handle($handle)
-	{
-		return preg_replace('/[^a-z0-9-_.]+/ui', '', $handle);
-	}
-
-	/**
 	 * Checks if media source is local
 	 *
 	 * @return bool
@@ -1698,17 +1881,22 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					? str_replace('https:', 'http:', $site_url)
 					: str_replace('http:', 'https:', $site_url);
 			}
+			$src = str_replace($site_url, '', $src);
 
-			// we need to remove blog path from `$src` as well, this is for
+			// we need to remove blog path from `$src`, this is for
 			// compatibility with sub-directory multisite installation
 			$blog_path = $this->_get_blog_path();
-
-			$src = str_replace($site_url, '', $src);
 			$src = !empty($blog_path)
 				? preg_replace('#' . $blog_path . '#ui', '/', $src, 1)
 				: $src;
+
+			// need to remove anythign that needs removing from the base
+			// because the current url also contains the base
+			$src = !empty($this->remove_from_base)
+				? preg_replace('#^/' . $this->remove_from_base . '/#ui', '/', $src, 1)
+				: $src;
 		}
-		else if ('/' === substr($src, 0, 1))
+		else if ('/' === substr($src, 0, 1) && !empty($this->base))
 		{
 			// root relative url
 			if (false !== strpos($src, 'wp-includes')
@@ -1769,14 +1957,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			case 'script':
 				$return  = "<script type='text/javascript' src='"
 					. esc_url($string)
-					. "'></script>\n";
+					. "'></script>\r\n";
 				break;
 
 			case 'style':
 				$return = "<link rel='stylesheet' id='"
 					. esc_attr($group_handle) . "-group-css' href='"
 					. esc_url($string) . "' type='text/css' media='"
-					. esc_attr($media) . "' />\n";
+					. esc_attr($media) . "' />\r\n";
 
 				if ($title)
 				{
@@ -1784,13 +1972,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						. esc_attr($group_handle) . "-group-css' title='"
 						. esc_attr($title) . "' href='"
 						. esc_url($string) . "' type='text/css' media='"
-						. esc_attr($media) . "' />\n";
+						. esc_attr($media) . "' />\r\n";
 				}
 				break;
 		}
 
 		if ($if)
-			$return = "<!--[if " . esc_html($if) . "]>\n" . $return . "<![endif]-->\n";
+			$return = "<!--[if " . esc_html($if) . "]>\r\n" . $return . "<![endif]-->\r\n";
 
 		return apply_filters('bwp_get_minify_tag', $return, $string, $type, $group);
 	}

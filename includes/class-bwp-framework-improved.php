@@ -299,7 +299,8 @@ class BWP_FRAMEWORK_IMPROVED {
 		$this->pre_init_build_options();
 		$this->pre_init_properties();
 		$this->load_libraries();
-		$this->add_hooks();
+		$this->pre_init_hooks();
+		$this->pre_init_update_plugin();
 
 		// Support installation and uninstallation
 		register_activation_hook($this->plugin_file, array($this, 'install'));
@@ -319,9 +320,11 @@ class BWP_FRAMEWORK_IMPROVED {
 	{
 		do_action($this->plugin_key . '_pre_init');
 
+		$this->init_update_plugin();
 		$this->build_constants();
 		$this->build_options();
 		$this->init_properties();
+		$this->init_hooks();
 		$this->enqueue_media();
 
 		do_action($this->plugin_key . '_loaded');
@@ -443,7 +446,43 @@ class BWP_FRAMEWORK_IMPROVED {
 		/* intentionally left blank */
 	}
 
-	protected function add_hooks()
+	protected function update_plugin($when = '')
+	{
+		if (!is_admin())
+			return;
+
+		$current_version = $this->plugin_ver;
+		$db_version = get_option($this->plugin_key . '_version');
+
+		$action_hook = 'pre_init' == $when
+			? $this->plugin_key . '_upgrade'
+			: $this->plugin_key . '_init_upgrade';
+
+		if (!$db_version || version_compare($db_version, $current_version, '<'))
+		{
+			do_action($action_hook, $db_version, $current_version);
+			// only mark as upgraded when this is init update
+			if ('init' == $when)
+				update_option($this->plugin_key . '_version', $current_version);
+		}
+	}
+
+	protected function pre_init_update_plugin()
+	{
+		$this->update_plugin('pre_init');
+	}
+
+	protected function init_update_plugin()
+	{
+		$this->update_plugin('init');
+	}
+
+	protected function pre_init_hooks()
+	{
+		/* intentionally left blank */
+	}
+
+	protected function init_hooks()
 	{
 		/* intentionally left blank */
 	}

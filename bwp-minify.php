@@ -11,8 +11,8 @@ Author URI: http://betterwp.net
 License: GPLv3
 */
 
-// In case someone integrates this plugin in a theme
-if (class_exists('BWP_MINIFY'))
+// In case someone integrates this plugin in a theme or calling this directly
+if (class_exists('BWP_MINIFY') || !defined('ABSPATH'))
 	return;
 
 // Frontend
