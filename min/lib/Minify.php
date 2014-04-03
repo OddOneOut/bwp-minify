@@ -563,6 +563,15 @@ class Minify {
      */
     protected static function _getCacheId($prefix = 'minify')
     {
+        // if friendly minify url is used we use a new naming structure for
+        // cached files
+        $name    = trim(strip_tags($_GET['name']));
+        $ext     = trim(strip_tags($_GET['type']));
+        $blog_id = (int) $_GET['bid'];
+        if (!empty($blog_id) && !empty($name) && in_array($ext, array('js', 'css')))
+            return "{$prefix}-b{$blog_id}-{$name}.{$ext}";
+
+        // otherwise use the old naming structure
         $name = preg_replace('/[^a-zA-Z0-9\\.=_,]/', '', self::$_controller->selectionId);
         $name = preg_replace('/\\.+/', '.', $name);
         $name = substr($name, 0, 100 - 34 - strlen($prefix));

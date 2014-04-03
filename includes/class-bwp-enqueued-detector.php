@@ -121,7 +121,7 @@ class BWP_Enqueued_Detector
 		$hash = md5($string . $this->_version);
 
 		$this->_log('group', array(
-			'handle' => $group_handle . '-' . substr($hash, 0, 15),
+			'handle' => $group_handle . '-' . $hash,
 			'string' => $string,
 			'type'   => $group_type,
 			'order'  => $this->_group_count,

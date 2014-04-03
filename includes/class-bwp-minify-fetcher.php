@@ -20,7 +20,7 @@ class BWP_Minify_Fetcher
 
 	private $_min_url = '';
 
-	private $_min_fly_path = '';
+	private $_min_fly_url = '';
 
 	private $_rewrite_pattern = '';
 
@@ -50,9 +50,9 @@ class BWP_Minify_Fetcher
 		$this->_min_url = $min_url;
 	}
 
-	public function set_min_fly_path($min_fly_path)
+	public function set_min_fly_url($min_fly_url)
 	{
-		$this->_min_fly_path = $min_fly_path;
+		$this->_min_fly_url = $min_fly_url;
 	}
 
 	public function set_rewrite_pattern($pattern)
@@ -75,14 +75,16 @@ class BWP_Minify_Fetcher
 	 */
 	public function serve($query)
 	{
-		$group_handle = isset($query->query_vars['min_group'])
-			? $query->query_vars['min_group']
+		$group_handle = isset($_GET['min_group'])
+			? $this->_sanitize_request($_GET['min_group'])
 			: '';
-		$type = isset($query->query_vars['min_type'])
-			? $query->query_vars['min_type']
+		$type = isset($_GET['min_type'])
+			&& in_array($_GET['min_type'], array('js', 'css'))
+			? $_GET['min_type']
 			: '';
+		$blog_id = isset($_GET['blog']) ? (int) $_GET['blog'] : 0;
 
-		if (empty($group_handle) || empty($type))
+		if (empty($group_handle) || empty($type) || empty($blog_id))
 			return;
 
 		$group = $this->_detector->get_group($group_handle);
@@ -98,7 +100,11 @@ class BWP_Minify_Fetcher
 
 		$string  = $group['string'];
 		$headers = $this->_get_request_headers();
-		$url = trailingslashit($this->_min_url) . '?f=' . $string;
+		$url = trailingslashit($this->_min_url)
+			. '?f=' . $string
+			. '&name=' . $group_handle
+			. '&type=' . $type
+			. '&bid=' . $blog_id;
 
 		// try to fetch actual minified contents from regular Minify url while
 		// preserving correct headers
@@ -126,9 +132,13 @@ class BWP_Minify_Fetcher
 		$response_code     = wp_remote_retrieve_response_code($response);
 		foreach ($minified_headers as $header_name => $headers)
 		{
-			// get rid of etag header
-			if ('etag' == $header_name)
+			// get rid of etag header, powered-by header, and server header
+			$real_header_name = strtolower($header_name);
+			if ('etag' == $real_header_name || 'x-powered-by' == $real_header_name
+				|| 'server' == $real_header_name
+			) {
 				continue;
+			}
 
 			foreach ((array) $headers as $header)
 				header($header_name . ': ' . $header);
@@ -155,15 +165,11 @@ class BWP_Minify_Fetcher
 	 */
 	public function friendlify_src($string, $original_string, $group_handle, $buster)
 	{
-		// if rewrite rules are not available, do not proceed
-		if (false == $this->_are_rewrite_rules_ready())
-			return $string;
-
 		// get extension from minify string, this determines the type of source
 		// we're dealing with
 		$ext = preg_match('/\.([^\.]+)$/ui', $original_string, $matches)
-			? $matches[1]
-			: '';
+			? $matches[1] : '';
+
 		if (empty($ext))
 			return $string;
 
@@ -183,18 +189,15 @@ class BWP_Minify_Fetcher
 			return $string;
 		}
 
-		// build the friendly filename for this minify url, we only need the
-		// first 15 chars of the group hash
-		$min_path  = $this->_options['input_fly_minpath'];
-		$fly_name  = $min_path . 'minify-group-'
-			. $group_handle
-			. '-'
-			. substr($group_hash, 0, 15)
-			. '.'
-			. $ext;
-		$fly_name .= !empty($buster) ? '&#038;ver=' . $buster : '';
+		// build the friendly url for this minify url
+		global $blog_id;
+		$fly_url  = $this->_min_fly_url . 'minify-'
+			. 'b' . $blog_id . '-' . $group_handle
+			. '-' . $group_hash
+			. '.' . $ext;
+		$fly_url .= !empty($buster) ? '&#038;ver=' . $buster : '';
 
-		return home_url($fly_name);
+		return $fly_url;
 	}
 
 	/**
@@ -218,6 +221,11 @@ class BWP_Minify_Fetcher
 		}
 
 		return false;
+	}
+
+	private function _sanitize_request($request)
+	{
+		return trim(stripslashes(strip_tags($request)));
 	}
 
 	/**

@@ -1,4 +1,4 @@
-<Limit GET POST PUT DELETE>
+<Limit POST PUT DELETE>
 Order Allow,Deny
 Deny from All
 </Limit>

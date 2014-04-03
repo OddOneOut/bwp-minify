@@ -643,6 +643,24 @@ class BWP_FRAMEWORK_IMPROVED {
 	{
 		if (function_exists('is_multisite') && is_multisite())
 			return true;
+
+		if (defined('MULTISITE'))
+			return MULTISITE;
+
+		if (defined('SUBDOMAIN_INSTALL') || defined('VHOST') || defined('SUNRISE'))
+			return true;
+
+		return false;
+	}
+
+	protected static function is_subdomain_install()
+	{
+		if (self::is_multisite()
+			&& defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL
+		) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -651,5 +669,26 @@ class BWP_FRAMEWORK_IMPROVED {
 		if (self::is_multisite() && !is_super_admin())
 			return true;
 		return false;
+	}
+
+	protected static function is_apache()
+	{
+		if (isset($_SERVER['SERVER_SOFTWARE'])
+			&& false !== stripos($_SERVER['SERVER_SOFTWARE'], 'apache')
+		) {
+			return true;
+		}
+		return false;
+	}
+
+	protected static function is_nginx()
+	{
+		if (isset($_SERVER['SERVER_SOFTWARE'])
+			&& false !== stripos($_SERVER['SERVER_SOFTWARE'], 'nginx')
+		) {
+			return true;
+		}
+		return false;
+
 	}
 }
