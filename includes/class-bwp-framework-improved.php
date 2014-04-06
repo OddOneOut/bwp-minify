@@ -106,6 +106,7 @@ class BWP_FRAMEWORK_IMPROVED {
 	 */
 	var $wp_ver = '2.8';
 	var $php_ver = '5';
+	var $domain = '';
 
 	/**
 	 * Other special variables
@@ -655,11 +656,8 @@ class BWP_FRAMEWORK_IMPROVED {
 
 	protected static function is_subdomain_install()
 	{
-		if (self::is_multisite()
-			&& defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL
-		) {
+		if (defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL)
 			return true;
-		}
 
 		return false;
 	}
@@ -689,6 +687,5 @@ class BWP_FRAMEWORK_IMPROVED {
 			return true;
 		}
 		return false;
-
 	}
 }

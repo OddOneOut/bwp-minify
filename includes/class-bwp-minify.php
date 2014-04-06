@@ -141,6 +141,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		// Plugin's version
 		$this->set_version($version);
 		$this->set_version('5.1.6', 'php');
+		// Plugin's language domain
+		$this->domain = 'bwp-minify';
 		// Basic version checking
 		if (!$this->check_required_versions())
 			return;
@@ -191,19 +193,19 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		);
 
 		$this->add_option_key('BWP_MINIFY_OPTION_GENERAL', 'bwp_minify_general',
-			__('General Options', 'bwp-minify')
+			__('General Options', $this->domain)
 		);
 		$this->add_option_key('BWP_MINIFY_OPTION_ADVANCED', 'bwp_minify_advanced',
-			__('Advanced Options', 'bwp-minify')
+			__('Advanced Options', $this->domain)
 		);
 		$this->add_extra_option_key('BWP_MINIFY_MANAGE', 'bwp_minify_manage',
-			__('Manage enqueued Files', 'bwp-minify')
+			__('Manage enqueued Files', $this->domain)
 		);
 		// define hidden option keys
 		define('BWP_MINIFY_DETECTOR_LOG', 'bwp_minify_detector_log');
 
-		$this->build_properties('BWP_MINIFY', 'bwp-minify', $options,
-			'BetterWP Minify', dirname(dirname(__FILE__)) . '/bwp-minify.php',
+		$this->build_properties('BWP_MINIFY', $this->domain, $options,
+			'Better WordPress Minify', dirname(dirname(__FILE__)) . '/bwp-minify.php',
 			'http://betterwp.net/wordpress-plugins/bwp-minify/', false
 		);
 	}
@@ -219,7 +221,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	{
 		if ($to == '1.2.9')
 		{
-			// @since 1.3.0 default values of min path and cache dir is empty
+			// @since 1.3.0 default values of min path and cache dir is empty,
+			// also look for 'Better-WordPress-Minify-1.3.0' string for users
+			// that tested 1.3.0-beta
 			$options = get_option(BWP_MINIFY_OPTION_GENERAL);
 			$this->_reset_min_path($options);
 			$this->_reset_cache_dir($options);
@@ -251,15 +255,21 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _reset_min_path(&$options = false)
 	{
 		$options = false == $options ? $this->options : $options;
-		if ($options['input_minpath'] == $this->get_default_min_path())
+		if ($options['input_minpath'] == $this->get_default_min_path()
+			|| false !== stripos($options['input_minpath'], 'Better-WordPress-Minify-1.3.0')
+		) {
 			$options['input_minpath'] = '';
+		}
 	}
 
 	private function _reset_cache_dir(&$options = false)
 	{
 		$options = false == $options ? $this->options : $options;
-		if ($options['input_cache_dir'] == $this->get_default_cache_dir())
+		if ($options['input_cache_dir'] == $this->get_default_cache_dir()
+			|| false !== stripos($options['input_cache_dir'], 'Better-WordPress-Minify-1.3.0')
+		) {
 			$options['input_cache_dir'] = '';
+		}
 	}
 
 	/**
@@ -569,14 +579,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 		// init the detector class, responsible for detecting and logging
 		// enqueued files
-		$this->detector = new BWP_Enqueued_Detector($this->options, 'bwp-minify');
+		$this->detector = new BWP_Enqueued_Detector($this->options, $this->domain);
 		$this->detector->set_log(BWP_MINIFY_DETECTOR_LOG);
 
 		// init the fetcher class if needed, responsible for serving friendly
 		// minify urls
 		if ('yes' == $this->options['enable_fly_min'])
 		{
-			$this->fetcher = new BWP_Minify_Fetcher($this->options, 'bwp-minify');
+			$this->fetcher = new BWP_Minify_Fetcher($this->options, $this->domain);
 			$this->fetcher->set_detector($this->detector);
 			$this->fetcher->set_min_url($this->min_url);
 			$this->fetcher->set_min_fly_url($this->fly_min_url);
@@ -584,7 +594,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 		// init the CDN class if needed
 		if ('yes' == $this->options['enable_cdn'])
-			$this->cdn = new BWP_Minify_CDN($this->options, 'bwp-minify');
+			$this->cdn = new BWP_Minify_CDN($this->options, $this->domain);
 	}
 
 	/**
@@ -813,12 +823,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			/**
 			 * Priorities of these hooks below greatly affects compatibility
 			 * with other plugins, especially plugins that output additional
-			 * scripts directly via actions attached to `wp_footer` hook. Those
-			 * plugins will likely register their output functions at a much
-			 * lower priority than `wp_print_head_scripts` or similar
-			 * hooks' priorities (bbpress uses 50, for e.g.).  BWP Minify
-			 * registers its output functions at 1 priority higher than
-			 * WordPress's hooks, to make sure (well not that sure) additional
+			 * scripts directly via actions attached to `wp_footer` or
+			 * `wp_print_*` hooks. Those plugins will likely register their
+			 * output functions at a rather low priority (WordPress's WYSIWYG
+			 * editor uses `50` to output TinyMCE's inline and linked JS, for
+			 * e.g.). BWP Minify registers its output functions at the same
+			 * priority as `wp_print_head_scripts` (i.e. 9) for header scripts
+			 * and 1 priority lower than `_wp_footer_scripts` for footer
+			 * scripts (i.e. 11), to make sure (well not that sure) additional
 			 * scripts are printed after their main JS files are printed.
 			 */
 
@@ -830,10 +842,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				// build a list of very late styles
 				add_action('wp_print_styles', array($this, 'add_late_styles'), 999);
 				// hook to common head and footer actions, as late as possible
-				add_action('wp_head', array($this, 'print_header_styles'), 9);
-				add_action('login_head', array($this, 'print_header_styles'), 9);
-				add_action('wp_print_footer_scripts', array($this, 'print_footer_styles'), 21);
-				add_action('admin_print_styles', array($this, 'print_header_styles'), 9);
+				add_action('wp_head', array($this, 'print_header_styles'), 8);
+				add_action('login_head', array($this, 'print_header_styles'), 8);
+				add_action('wp_print_footer_scripts', array($this, 'print_footer_styles'), 11);
+				add_action('admin_print_styles', array($this, 'print_header_styles'), 8);
 			}
 
 			// minify scripts if needed
@@ -844,11 +856,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				// build a list of very late scripts
 				add_action('wp_print_scripts', array($this, 'add_late_scripts'), 999);
 				// hook to common head and footer actions, as late as possible
-				add_action('wp_head', array($this, 'print_header_scripts'), 10);
-				add_action('login_head', array($this, 'print_header_scripts'), 10);
-				add_action('wp_print_footer_scripts', array($this, 'print_footer_scripts'), 21);
-				add_action('admin_print_scripts', array($this, 'print_header_scripts'), 10);
-				add_action('admin_print_footer_scripts', array($this, 'print_footer_scripts'), 21);
+				add_action('wp_head', array($this, 'print_header_scripts'), 9);
+				add_action('login_head', array($this, 'print_header_scripts'), 9);
+				add_action('wp_print_footer_scripts', array($this, 'print_footer_scripts'), 11);
+				add_action('admin_print_scripts', array($this, 'print_header_scripts'), 9);
+				add_action('admin_print_footer_scripts', array($this, 'print_footer_scripts'), 11);
 			}
 		}
 
@@ -896,7 +908,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			: BWP_MINIFY_IMAGES . '/icon_menu.png';
 
 		add_menu_page(
-			__('Better WordPress Minify', 'bwp-minify'),
+			__('Better WordPress Minify', $this->domain),
 			'BWP Minify',
 			BWP_MINIFY_CAPABILITY,
 			BWP_MINIFY_OPTION_GENERAL,
@@ -906,24 +918,24 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		// Sub menus
 		add_submenu_page(
 			BWP_MINIFY_OPTION_GENERAL,
-			__('General Options', 'bwp-minify'),
-			__('General Options', 'bwp-minify'),
+			__('General Options', $this->domain),
+			__('General Options', $this->domain),
 			BWP_MINIFY_CAPABILITY,
 			BWP_MINIFY_OPTION_GENERAL,
 			array($this, 'build_option_pages')
 		);
 		add_submenu_page(
 			BWP_MINIFY_OPTION_GENERAL,
-			__('Advanced Options', 'bwp-minify'),
-			__('Advanced Options', 'bwp-minify'),
+			__('Advanced Options', $this->domain),
+			__('Advanced Options', $this->domain),
 			BWP_MINIFY_CAPABILITY,
 			BWP_MINIFY_OPTION_ADVANCED,
 			array($this, 'build_option_pages')
 		);
 		add_submenu_page(
 			BWP_MINIFY_OPTION_GENERAL,
-			__('Manage enqueued Files', 'bwp-minify'),
-			__('Enqueued Files', 'bwp-minify'),
+			__('Manage enqueued Files', $this->domain),
+			__('Enqueued Files', $this->domain),
 			BWP_MINIFY_CAPABILITY,
 			BWP_MINIFY_MANAGE,
 			array($this, 'build_option_pages')
@@ -1019,19 +1031,19 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					),
 					'item_labels' => array
 					(
-						__('Plugin Functionality', 'bwp-minify'),
-						__('Minify JS files automatically?', 'bwp-minify'),
-						__('Minify CSS files automatically?', 'bwp-minify'),
-						__('Minify <code>bloginfo()</code> stylesheets?', 'bwp-minify'),
-						__('URL path to Minify library (relative to domain root)', 'bwp-minify'),
-						__('One minify string will contain', 'bwp-minify'),
-						__('Append the minify string with', 'bwp-minify'),
-						__('Minify Library Settings', 'bwp-minify'),
-						__('WordPress document root', 'bwp-minify'),
-						__('Cache directory', 'bwp-minify'),
-						__('Cache age', 'bwp-minify'),
-						__('Enable bubble CSS import?', 'bwp-minify'),
-						__('Enable cache file locking?', 'bwp-minify')
+						__('Plugin Functionality', $this->domain),
+						__('Minify JS files automatically?', $this->domain),
+						__('Minify CSS files automatically?', $this->domain),
+						__('Minify <code>bloginfo()</code> stylesheets?', $this->domain),
+						__('URL path to Minify library (relative to domain root)', $this->domain),
+						__('One minify string will contain', $this->domain),
+						__('Append the minify string with', $this->domain),
+						__('Minify Library Settings', $this->domain),
+						__('WordPress document root', $this->domain),
+						__('Cache directory', $this->domain),
+						__('Cache age', $this->domain),
+						__('Enable bubble CSS import?', $this->domain),
+						__('Enable cache file locking?', $this->domain)
 					),
 					'item_names' => array(
 						'h1',
@@ -1052,31 +1064,31 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'h1' => '',
 						'h2' => '<a name="minify.config.php"></a>' . sprintf(
 							__('<em>These options will let you control how the actual '
-							. '<a href="%s" target="_blank">Minify</a> library works.</em>', 'bwp-minify'),
+							. '<a href="%s" target="_blank">Minify</a> library works.</em>', $this->domain),
 							'https://code.google.com/p/minify/'
 						)
 					),
 					'select' => array(
 						'select_time_type' => array(
-							__('second(s)', 'bwp-minify') => 1,
-							__('minute(s)', 'bwp-minify') => 60,
-							__('hour(s)', 'bwp-minify') => 3600,
-							__('day(s)', 'bwp-minify') => 86400
+							__('second(s)', $this->domain) => 1,
+							__('minute(s)', $this->domain) => 60,
+							__('hour(s)', $this->domain) => 3600,
+							__('day(s)', $this->domain) => 86400
 						),
 						'select_buster_type' => array(
-							__('Do not append anything', 'bwp-minify') => 'none',
-							__('Cache folder&#8217;s last modified time', 'bwp-minify') => 'mtime',
-							__('Your WordPress&#8217;s current version', 'bwp-minify') => 'wpver',
-							__('Your theme&#8217;s current version', 'bwp-minify') => 'tver',
-							__('A custom number', 'bwp-minify') => 'custom'
+							__('Do not append anything', $this->domain) => 'none',
+							__('Cache folder&#8217;s last modified time', $this->domain) => 'mtime',
+							__('Your WordPress&#8217;s current version', $this->domain) => 'wpver',
+							__('Your theme&#8217;s current version', $this->domain) => 'tver',
+							__('A custom number', $this->domain) => 'custom'
 						)
 					),
 					'checkbox' => array(
-						'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_js'),
-						'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', 'bwp-minify') => 'enable_min_css'),
-						'cb2' => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', 'bwp-minify') => 'enable_bloginfo'),
-						'cb4' => array(sprintf(__('move all <code>@import</code> rules in CSS files to the top. More info <a href="%s" target="_blank">here</a>.', 'bwp-minify'), 'http://code.google.com/p/minify/wiki/CommonProblems#@imports_can_appear_in_invalid_locations_in_combined_CSS_files') => 'enable_css_bubble'),
-						'cb5' => array(__('disable this if filesystem is NFS.', 'bwp-minify') => 'enable_cache_file_lock'),
+						'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', $this->domain) => 'enable_min_js'),
+						'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', $this->domain) => 'enable_min_css'),
+						'cb2' => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', $this->domain) => 'enable_bloginfo'),
+						'cb4' => array(sprintf(__('move all <code>@import</code> rules in CSS files to the top. More info <a href="%s" target="_blank">here</a>.', $this->domain), 'http://code.google.com/p/minify/wiki/CommonProblems#@imports_can_appear_in_invalid_locations_in_combined_CSS_files') => 'enable_css_bubble'),
+						'cb5' => array(__('disable this if filesystem is NFS.', $this->domain) => 'enable_cache_file_lock'),
 					),
 					'input' => array(
 						'input_minpath' => array(
@@ -1084,7 +1096,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							'label' => '<br />' . sprintf(
 								__('Leave empty to use default value, which is <code>%s</code>.<br />'
 								. 'Please read <a href="%s#customization">here</a> '
-								. 'to know how to properly modify this.', 'bwp-minify'),
+								. 'to know how to properly modify this.', $this->domain),
 								$this->get_default_min_path(), $this->plugin_url)
 						),
 						'input_doc_root' => array(
@@ -1100,16 +1112,16 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 								. 'Cache directory must be writable '
 								. '(i.e. CHMOD to 755 or 777). '
 								. 'More details can be found '
-								. '<a href="%s#advanced_customization" target="_blank">here</a>. ', 'bwp-minify'),
+								. '<a href="%s#advanced_customization" target="_blank">here</a>. ', $this->domain),
 								$this->get_default_cache_dir(), $this->plugin_url)
 						),
 						'input_maxfiles' => array(
 							'size' => 3,
-							'label' => __('file(s) at most.', 'bwp-minify')
+							'label' => __('file(s) at most.', $this->domain)
 						),
 						'input_maxage' => array(
 							'size' => 5,
-							'label' => __('&mdash;', 'bwp-minify')
+							'label' => __('&mdash;', $this->domain)
 						),
 						'input_custom_buster' => array(
 							'pre' => '<em>&rarr; /min/?f=file.js&#038;ver=</em> ',
@@ -1125,7 +1137,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. 'you are basically telling browsers '
 							. 'to clear their cached version of your CSS and JS files, '
 							. 'which is very useful when you change source files. '
-							. 'Use this feature wisely :).</em>', 'bwp-minify')
+							. 'Use this feature wisely :).</em>', $this->domain)
 					),
 					'inline_fields' => array(
 						'input_maxage' => array(
@@ -1138,7 +1150,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					'inline' => array(
 						'input_cache_dir' => '<br /><br /><input type="submit" '
 							. 'class="button-secondary action" name="flush_cache" '
-							. 'value="' . __('Flush the cache', 'bwp-minify') . '" />'
+							. 'value="' . __('Flush the cache', $this->domain) . '" />'
 					)
 				);
 
@@ -1168,18 +1180,18 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$deleted = $this->_flush_cache();
 					if (0 < $deleted)
 						$this->add_notice(
-							'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
+							'<strong>' . __('Notice', $this->domain) . ':</strong> '
 							. sprintf(
 								__("<strong>%d</strong> cached files "
-								. "have been deleted successfully!", 'bwp-minify'),
+								. "have been deleted successfully!", $this->domain),
 								$deleted
 							)
 						);
 					else
 						$this->add_notice(
-							'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
+							'<strong>' . __('Notice', $this->domain) . ':</strong> '
 							. __("Could not delete any cached files. "
-							. "Please manually flush the cache directory.", 'bwp-minify')
+							. "Please manually flush the cache directory.", $this->domain)
 						);
 
 					// this should also clear all saved Minify groups
@@ -1204,16 +1216,16 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'textarea'
 					),
 					'item_labels' => array(
-						__('Friendly Minify Urls', 'bwp-minify'),
-						__('Enable friendly Minify urls', 'bwp-minify'),
-						__('Friendly Minify url path (relative to domain root)', 'bwp-minify'),
-						__('Content Delivery Network (CDN)', 'bwp-minify'),
-						__('Enable CDN support', 'bwp-minify'),
-						__('SSL support for CDN', 'bwp-minify'),
-						__('CDN hostname (primary)', 'bwp-minify'),
-						__('CDN hostname for JS files', 'bwp-minify'),
-						__('CDN hostname for CSS files', 'bwp-minify'),
-						__('Additional HTTP headers used with CDN', 'bwp-minify')
+						__('Friendly Minify Urls', $this->domain),
+						__('Enable friendly Minify urls', $this->domain),
+						__('Friendly Minify url path (relative to domain root)', $this->domain),
+						__('Content Delivery Network (CDN)', $this->domain),
+						__('Enable CDN support', $this->domain),
+						__('SSL support for CDN', $this->domain),
+						__('CDN hostname (primary)', $this->domain),
+						__('CDN hostname for JS files', $this->domain),
+						__('CDN hostname for CSS files', $this->domain),
+						__('Additional HTTP headers used with CDN', $this->domain)
 					),
 					'item_names' => array(
 						'h1',
@@ -1231,7 +1243,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							__('Turn long and ugly Minify urls with '
 							. 'query variables (such as <code>%s</code>), '
 							. 'into more friendly ones (e.g. <code>%s</code>). '
-							. '', 'bwp-minify'),
+							. '', $this->domain),
 							trailingslashit($this->min_url)
 							. '?f=path/to/script1.js,path/to/script2.js',
 							home_url('path/to/cache/somestring.js')
@@ -1239,22 +1251,22 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'h2' => __('Allows you to replace the current hostname '
 							. 'serving minified JS, CSS files (origin server) '
 							. 'with CDN hostnames or custom hostnames '
-							. '(such as sub-domains on origin server).', 'bwp-minify')
+							. '(such as sub-domains on origin server).', $this->domain)
 					),
 					'select' => array(
 						'select_fly_serve_method' => array(
-							__('WordPress', 'bwp-minify') => 'wp',
-							__('Server rewrite rules', 'bwp-minify') => 'server'
+							__('WordPress', $this->domain) => 'wp',
+							__('Server rewrite rules', $this->domain) => 'server'
 						),
 						'select_cdn_ssl_type' => array(
-							__('Do not use SSL for CDN', 'bwp-minify') => 'off',
-							__('Use SSL when suitable', 'bwp-minify') => 'on',
-							__('Use protocol-relative URL', 'bwp-minify') => 'less'
+							__('Do not use SSL for CDN', $this->domain) => 'off',
+							__('Use SSL when suitable', $this->domain) => 'on',
+							__('Use protocol-relative URL', $this->domain) => 'less'
 						)
 					),
 					'checkbox' => array(
 						'cb1' => array(
-							__('for CDN support it is highly recommended that you enable this feature.', 'bwp-minify') => 'enable_fly_min'
+							__('for CDN support it is highly recommended that you enable this feature.', $this->domain) => 'enable_fly_min'
 						),
 						'cb2' => array(
 							__('please make sure that your CDN is property setup before enabling this feature.') => 'enable_cdn'
@@ -1271,17 +1283,17 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 								__('Use either hostnames provided by your '
 								. 'CDN or custom ones. Please do NOT include '
 								. 'the scheme (i.e. <code>http://</code> or <code>https://</code>). '
-								. 'Good examples are: <code>%s</code>, <code>%s</code>, etc.', 'bwp-minify'),
+								. 'Good examples are: <code>%s</code>, <code>%s</code>, etc.', $this->domain),
 								'yourzone.yourcdn.com', 'cdn.yourdomain.com'
 							)
 						),
 						'input_cdn_host_js' => array(
 							'size' => 40,
-							'label' => '&nbsp; ' . __('used when not empty.', 'bwp-minify')
+							'label' => '&nbsp; ' . __('used when not empty.', $this->domain)
 						),
 						'input_cdn_host_css' => array(
 							'size' => 40,
-							'label' => '&nbsp; ' . __('used when not empty.', 'bwp-minify')
+							'label' => '&nbsp; ' . __('used when not empty.', $this->domain)
 						)
 					),
 					'textarea' => array(
@@ -1290,7 +1302,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						)
 					),
 					'container' => array(
-						'select_fly_serve_method' => '<em><strong>' . __('Important', 'bwp-minify') . ':</strong> '
+						'select_fly_serve_method' => '<em><strong>' . __('Important', $this->domain) . ':</strong> '
 							. sprintf(
 								__('If WordPress is used to serve friendly urls '
 								. '(which is the default), '
@@ -1298,7 +1310,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 								. '<a href="%s" target="_blank">Pretty Permalinks</a>. '
 								. 'Using server rewrite rules is only recommended '
 								. 'when you do not want to use pretty permalinks '
-								. '(server rewrite rules require more setup).', 'bwp-minify'),
+								. '(server rewrite rules require more setup).', $this->domain),
 								'http://codex.wordpress.org/Using_Permalinks#mod_rewrite:_.22Pretty_Permalinks.22'
 							) . '</em>'
 					),
@@ -1324,7 +1336,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$this->add_notice(
 						__('Enqueued file lists have been cleared successfully. '
 						. 'Please try visiting a few pages on your site '
-						. 'and then refresh this page to see new file lists.', 'bwp-minify')
+						. 'and then refresh this page to see new file lists.', $this->domain)
 					);
 				}
 
@@ -1334,8 +1346,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'heading'
 					),
 					'item_labels' => array (
-						__('Move enqueued JS files to appropriate positions', 'bwp-minify'),
-						__('Move enqueued CSS files to appropriate positions', 'bwp-minify')
+						__('Move enqueued JS files to appropriate positions', $this->domain),
+						__('Move enqueued CSS files to appropriate positions', $this->domain)
 					),
 					'item_names' => array(
 						'h1',
@@ -1348,7 +1360,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. 'then choose an appropriate position for selected JS file. '
 							. 'You can also directly type in one script handle (<strong>NOT '
 							. 'filename/script src</strong>) per line in the input field if '
-							. 'you want.</em> More info <a href="%s#positioning-your-files">here</a>.', 'bwp-minify'),
+							. 'you want.</em> More info <a href="%s#positioning-your-files">here</a>.', $this->domain),
 							$this->plugin_url
 						),
 						'h2' => sprintf(
@@ -1357,7 +1369,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. 'then choose an appropriate position for selected CSS file. '
 							. 'You can also directly type in one style handle (<strong>NOT '
 							. 'filename/style src</strong>) per line in the input field if '
-							. 'you want.</em> More info <a href="%s#positioning-your-files">here</a>.', 'bwp-minify'),
+							. 'you want.</em> More info <a href="%s#positioning-your-files">here</a>.', $this->domain),
 							$this->plugin_url
 						)
 					),
@@ -1449,10 +1461,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				$this->add_notice(
 					__('All positions have been saved. '
 					. 'Try visiting some pages on your site and then '
-					. 'refresh this page for updated file lists.', 'bwp-minify')
+					. 'refresh this page for updated file lists.', $this->domain)
 				);
 			} else {
-				$this->add_notice(__('All options have been saved.', 'bwp-minify'));
+				$this->add_notice(__('All options have been saved.', $this->domain));
 			}
 
 			// take care of some custom POST actions when form is submitted
@@ -1465,7 +1477,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// config file was successfully written
 					$this->add_notice(sprintf(
 						__('Minify config file <code>%s</code> '
-						. 'has been updated successfully.', 'bwp-minify'),
+						. 'has been updated successfully.', $this->domain),
 						$this->min_dir . 'config.php'
 					));
 				}
@@ -1478,7 +1490,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							__('Minify config file <code>config.php</code> could not be found. '
 							. 'The auto-detected directory to look for the config file is <code>%s</code>. '
 							. 'Please manually check if that directory actually exists '
-							. 'and contains the config file.', 'bwp-minify'),
+							. 'and contains the config file.', $this->domain),
 							$this->get_doc_root($this->get_min_path())
 						)
 					);
@@ -1489,7 +1501,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$this->add_error(sprintf(
 						'<strong style="color:red">' . __('Error') . ':</strong> '
 						. __('There was an error writing to Minify config file <code>%s</code>. '
-						. 'Please try again.', 'bwp-minify'),
+						. 'Please try again.', $this->domain),
 						$this->min_dir . 'config.php'
 					));
 				}
@@ -1498,11 +1510,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// config file is not writable, show the auto-generated
 					// contents to admin for manual update
 					$this->add_notice(sprintf(
-						'<strong>' . __('Notice', 'bwp-minify') . ':</strong> '
+						'<strong>' . __('Notice', $this->domain) . ':</strong> '
 						. __('Minify config file <code>%s</code> '
 						. 'is not writable. See '
 						. '<a href="#minify.config.php">below</a> '
-						. 'for details.', 'bwp-minify'),
+						. 'for details.', $this->domain),
 						$this->min_dir . 'config.php'
 					));
 					$form['container']['h2'] = $this->_show_generated_config($result);
@@ -1525,7 +1537,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. __('There was an error writing to server config file <code>%s</code>. '
 							. 'Please make sure that it is writable and try again, '
 							. 'or you can manually update the config file '
-							. 'using auto-generated contents as shown below.', 'bwp-minify'),
+							. 'using auto-generated contents as shown below.', $this->domain),
 							$this->_get_server_config_file()
 						));
 					}
@@ -1536,7 +1548,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							'<strong style="color:red">' . __('Error') . ':</strong> '
 							. __('The server config file <code>%s</code> '
 							. 'is not writable, please manually update it '
-							. 'using auto-generated contents as shown below.', 'bwp-minify'),
+							. 'using auto-generated contents as shown below.', $this->domain),
 							$this->_get_server_config_file()
 						));
 					}
@@ -1549,7 +1561,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. __('The server config file <code>%s</code> '
 							. 'does not exist and could not be automatically created, '
 							. 'please manually create it using auto-generated '
-							. 'contents as shown below.', 'bwp-minify'),
+							. 'contents as shown below.', $this->domain),
 							$this->_get_server_config_file()
 						));
 					}
@@ -1566,7 +1578,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						$this->add_notice(
 							'<strong>' . __('Notice') . ':</strong> '
 							. __('Friendly minify url feature has been turned off '
-							. 'automatically to prevent your site from breaking. ', 'bwp-minify')
+							. 'automatically to prevent your site from breaking. ', $this->domain)
 						);
 
 						$form['container']['h1'] = $this->_show_generated_rewrite_rules();
@@ -1608,7 +1620,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. "and can not be created automatically. "
 							. "Please manually create the cache folder "
 							. "and make sure that it is writable "
-							. "for Minify to perform more efficiently.", 'bwp-minify'),
+							. "for Minify to perform more efficiently.", $this->domain),
 							$cache_dir
 						)
 					);
@@ -1618,7 +1630,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						. sprintf(
 							__("Cache directory <code>%s</code> is not writable. "
 							. "Please try CHMOD your cache directory to 755. "
-							. "If you still see this warning, try CHMOD to 777.", 'bwp-minify'),
+							. "If you still see this warning, try CHMOD to 777.", $this->domain),
 							$cache_dir
 						)
 					);
@@ -1644,9 +1656,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _show_enqueued_styles()
 	{
 		$fields = array(
-			'input_style_ignore' => __('Styles to be ignored (not minified)', 'bwp-minify'),
-			'input_style_direct' => __('Styles to be minified and then printed separately', 'bwp-minify'),
-			'input_style_oblivion' => __('Styles to be forgotten (to remove duplicate style)', 'bwp-minify')
+			'input_style_ignore' => __('Styles to be ignored (not minified)', $this->domain),
+			'input_style_direct' => __('Styles to be minified and then printed separately', $this->domain),
+			'input_style_oblivion' => __('Styles to be forgotten (to remove duplicate style)', $this->domain)
 		);
 
 		return $this->_show_enqueued('style', $fields);
@@ -1655,11 +1667,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _show_enqueued_scripts()
 	{
 		$fields = array(
-			'input_ignore' => __('Scripts to be ignored (not minified)', 'bwp-minify'),
-			'input_direct' => __('Scripts to be minified and then printed separately', 'bwp-minify'),
-			'input_header' => __('Scripts to be minified in header', 'bwp-minify'),
-			'input_footer' => __('Scripts to be minified in footer', 'bwp-minify'),
-			'input_oblivion' => __('Scripts to be forgotten (to remove duplicate scripts)', 'bwp-minify')
+			'input_ignore' => __('Scripts to be ignored (not minified)', $this->domain),
+			'input_direct' => __('Scripts to be minified and then printed separately', $this->domain),
+			'input_header' => __('Scripts to be minified in header', $this->domain),
+			'input_footer' => __('Scripts to be minified in footer', $this->domain),
+			'input_oblivion' => __('Scripts to be forgotten (to remove duplicate scripts)', $this->domain)
 		);
 
 		return $this->_show_enqueued('script', $fields);
@@ -1717,7 +1729,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'</p>',
 			'&nbsp; <input type="submit" class="button-secondary action" '
 				. 'name="clear_enqueue" value="'
-				. __('Clear File Lists', 'bwp-minify') . '" /></p>',
+				. __('Clear File Lists', $this->domain) . '" /></p>',
 			$button);
 
 		return $button;
@@ -1726,24 +1738,37 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _get_input_fly_minpath_label()
 	{
 		$fly_minpath = $this->get_fly_min_path();
+		$label = '';
 
 		if (false == $fly_minpath)
-			return '<br />' . sprintf(
+			$label = '<br />' . sprintf(
 				__('BWP Minify was not able to auto-detect friendly url based on '
 				. 'your current cache directory (<code>%s</code>). You must '
 				. 'manually set this setting for this feature to work.<br />'
 				. 'Please make sure that the entered URL path correctly links to '
-				. 'your current cache directory.', 'bwp-minify'),
+				. 'your current cache directory.', $this->domain),
 				$this->get_cache_dir()
 			);
 		else
-			return '<br />' . sprintf(
-			__('Leave empty to use <code>%s</code>, which is auto-detected '
+			$label = '<br />' . sprintf(
+				__('Leave empty to use <code>%s</code>, which is auto-detected '
 				. 'based on your current cache directory (<code>%s</code>). '
 				. 'The URL path (either manually entered or auto-detected) '
-				. 'must correctly link to your current cache directory.', 'bwp-minify'),
+				. 'must correctly link to your current cache directory.', $this->domain),
 				$fly_minpath, $this->get_cache_dir()
 			);
+
+		if (self::is_multisite() && !self::is_subdomain_install())
+		{
+			$label .= '<br /><strong>' . __('Notice', $this->domain) . ':</strong> ' . sprintf(
+				__('In a sub-directory multisite environment, '
+				. 'a blog path will be added before the URL path (e.g. <code>%s</code>) '
+				. 'when friendly Minify urls are served.', $this->domain),
+				'/blog1' . $fly_minpath
+			);
+		}
+
+		return $label;
 	}
 
 	private function _get_input_doc_root_label()
@@ -1752,7 +1777,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$wp_doc_root = bwp_get_home_path();
 
 		// if server document root is empty, or is invalid (i.e. WordPress
-		// does not live under it), we use WordPress document root
+		// does NOT live under it), we use WordPress document root
 		if (empty($doc_root) || 0 !== strpos($wp_doc_root, $doc_root))
 		{
 			return sprintf(
@@ -1766,7 +1791,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				. 'This setting is very important as it makes sure that Minify library '
 				. 'can correctly locate your JS, CSS files. '
 				. 'More info can be found <a href="%s#minify_document_root" '
-				. 'target="_blank">here</a>.', 'bwp-minify'),
+				. 'target="_blank">here</a>.', $this->domain),
 				$wp_doc_root, $this->plugin_url
 			);
 		}
@@ -1782,7 +1807,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				. 'This setting is very important as it makes sure that Minify '
 				. 'can correctly locate your JS, CSS files. '
 				. 'More info can be found <a href="%s#minify_document_root" '
-				. 'target="_blank">here</a>.', 'bwp-minify'),
+				. 'target="_blank">here</a>.', $this->domain),
 				$doc_root,  $this->plugin_url
 			);
 		}
@@ -1792,7 +1817,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	{
 		$output  = '<strong>' . __('Could not write Minify library settings to <code>%s</code>. '
 			. 'Please update the config file manually by <em>replacing</em> its current contents '
-			. 'with auto-generated contents as shown below:', 'bwp-minify') . '</strong>';
+			. 'with auto-generated contents as shown below:', $this->domain) . '</strong>';
 		$output  = sprintf($output, $this->min_dir . 'config.php');
 		$output .= '<br /><br />';
 		$output .= '<textarea class="code" rows="16" cols="90" readonly="readonly">'
@@ -1808,7 +1833,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$output  = '<strong>' . __('Please update the server config file '
 			. 'manually using auto-generated contents as shown below. '
 			. 'You should be able to find the server config file at <code>%s</code>, '
-			. 'if not, you must first create it.', 'bwp-minify') . '</strong>';
+			. 'if not, you must first create it.', $this->domain) . '</strong>';
 		$output  = sprintf($output, $this->_get_server_config_file());
 		$output .= '<br /><br />';
 		$output .= '<textarea class="code" rows="8" cols="90" readonly="readonly">'
@@ -2053,7 +2078,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			case 'none':
 			default:
 				if (is_admin())
-					$buster = __('empty', 'bwp-minify');
+					$buster = __('empty', $this->domain);
 			break;
 		}
 
@@ -2116,7 +2141,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 *
 	 * @return bool
 	 */
-	function is_local($src = '')
+	function is_local($src)
 	{
 		// prepend scheme to scheme-less URLs, to make parse_url work
 		if (0 === strpos($src, '//')) {
@@ -2128,9 +2153,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		if (false === $url)
 			return false;
 
-		// If scheme is set
 		if (isset($url['scheme']))
 		{
+			// this should be an absolute URL
 			// @since 1.3.0 consider sub-domain external for now
 			if (0 <> strcmp($url['host'], $blog_url['host']))
 				return false;
@@ -2142,20 +2167,27 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	}
 
 	/**
-	 * Make sure the source is valid.
+	 * Make sure the source is valid
 	 *
 	 * @since 1.0.3
+	 * @return bool
 	 */
-	function is_source_static($src = '')
+	function is_source_static($src)
 	{
+		// @since 1.3.0 check for query string in `$src`
+		if (false !== strpos($src, '?'))
+		{
+			$src = explode('?', $src);
+			$src = $src[0];
+		}
+
 		// Source that doesn't have .css or .js extesion is dynamic
-		if (!preg_match('#[^,]+\.(css|js)$#ui', $src))
+		if (!preg_match('#.*\.(css|js)$#ui', $src))
 			return false;
 
-		// Source that contains ?, =, & is dynamic
-		if (strpos($src, '?') === false
-			&& strpos($src, '=') === false
-			&& strpos($src, '&') === false)
+		// Source that contains =, & is dynamic
+		// @since 1.3.0 ? is considered static
+		if (strpos($src, '=') === false && strpos($src, '&') === false)
 			return true;
 
 		return false;
@@ -2217,7 +2249,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			}
 		}
 
-		// @since 1.0.3
+		// @since 1.3.0 strip query string from `$src` if any
+		if (false !== strpos($src, '?'))
+		{
+			$src = explode('?', $src);
+			$src = $src[0];
+		}
+
 		$src = str_replace('./', '/', $src);
 		$src = str_replace('\\', '/', $src);
 		$src = preg_replace('#[/]+#iu', '/', $src);
