@@ -1351,7 +1351,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					'item_labels' => array(
 						__('Friendly Minify Urls', $this->domain),
 						__('Enable friendly Minify urls', $this->domain),
-						__('Friendly Minify url path (relative to domain root)', $this->domain),
+						sprintf(
+							__('Friendly Minify url path (relative to <code>%s</code>)', $this->domain),
+							get_site_option('siteurl')
+						),
 						__('Content Delivery Network (CDN)', $this->domain),
 						__('Enable CDN support', $this->domain),
 						__('SSL support for CDN', $this->domain),
@@ -1468,8 +1471,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$this->detector->clear_logs('enqueue');
 					$this->add_notice(
 						__('Enqueued file lists have been cleared successfully. '
-						. 'Please try visiting a few pages on your site '
-						. 'and then refresh this page to see new file lists.', $this->domain)
+						. 'Try refreshing this page to see updated file lists.', $this->domain)
 					);
 				}
 
@@ -1586,10 +1588,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 			// success messages when settings are saved
 			if ($page == BWP_MINIFY_MANAGE) {
+				$this->detector->auto_detect();
 				$this->add_notice(
 					__('All positions have been saved. '
-					. 'Try visiting some pages on your site and then '
-					. 'refresh this page for updated file lists.', $this->domain)
+					. 'Try refreshing this page for updated file lists.', $this->domain)
 				);
 			} else {
 				$this->add_notice(__('All options have been saved.', $this->domain));
@@ -1714,8 +1716,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					else if (true === $result)
 					{
 						// successfully enable friendly minify url feature,
-						// flush all cached files
+						// flush all cached files and auto-detect groups
 						$this->_flush_cache();
+						$this->detector->auto_detect();
 					}
 				} else if ('yes' == $original_options['enable_fly_min']
 					&& 'yes' != $this->options['enable_fly_min']
@@ -1728,9 +1731,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			}
 		}
 
-		// take care of non-POST actions when we're on General Options page
 		if ($page == BWP_MINIFY_OPTION_GENERAL)
 		{
+			// take care of non-POST actions when we're on General Options page
 			// re-generate the buster string preview whenever buster type change
 			$options['input_custom_buster'] = $this->get_buster($options['select_buster_type']);
 			if ('custom' == $options['select_buster_type'])
@@ -2102,8 +2105,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			{
 				while (($file = readdir($dh)) !== false)
 				{
-					if (preg_match('/^minify_[a-z0-9\\.=_,]+(\.gz)?$/ui', $file))
-					{
+					if (preg_match('/^minify_[a-z0-9\\.=_,]+(\.gz)?$/ui', $file)
+						|| preg_match('/^minify-b\d+-[a-z0-9-_.]+(\.gz)?$/ui', $file)
+					) {
 						@unlink($cache_dir . $file);
 						$deleted++;
 					}

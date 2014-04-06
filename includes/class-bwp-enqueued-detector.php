@@ -45,6 +45,36 @@ class BWP_Enqueued_Detector
 	}
 
 	/**
+	 * Auto detects enqueued files when needed
+	 *
+	 * Attempts to make some automatic requests to some regular pages to
+	 * detect enqueued files.
+	 *
+	 * @uses wp_remote_get
+	 * @return void
+	 */
+	public function auto_detect()
+	{
+		$urls_to_request = array(
+			home_url(), // homepage
+			get_permalink(1), // first post, might not work
+			get_permalink(2) // first page, might not work
+		);
+
+		foreach ($urls_to_request as $url) {
+			$request = array(
+				'url'  => $url,
+				'args' => array(
+					'timeout'   => 0.01,
+					'blocking'  => false,
+					'sslverify' => apply_filters('https_local_ssl_verify', true)
+				)
+			);
+			wp_remote_get($request['url'], $request['args']);
+		}
+	}
+
+	/**
 	 * Detects an enqueued script
 	 *
 	 * This function is called whenever a script is being added to a Minify
@@ -231,6 +261,7 @@ class BWP_Enqueued_Detector
 		}
 
 		$this->commit_logs();
+		$this->auto_detect();
 	}
 
 	/**
@@ -471,10 +502,6 @@ class BWP_Enqueued_Detector
 			: array();
 	}
 
-	private function _setup_crons()
-	{
-	}
-
 	private function _register_hooks()
 	{
 		add_action('bwp_minify_moved_group', array($this, 'update_position'), 10, 3);
@@ -485,6 +512,5 @@ class BWP_Enqueued_Detector
 	private function _init()
 	{
 		$this->_register_hooks();
-		$this->_setup_crons();
 	}
 }
