@@ -217,6 +217,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$this->_add_rewrite_rules();
 	}
 
+	function uninstall()
+	{
+		$this->_remove_rewrite_rules();
+	}
+
 	function upgrade_plugin($from, $to)
 	{
 		if ($to == '1.2.9')
@@ -242,6 +247,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		define('BWP_MINIFY_RULES_END', '# END BWP Minify Rules');
 		define('BWP_MINIFY_HEADERS_BEGIN', '# BEGIN BWP Minify Headers');
 		define('BWP_MINIFY_HEADERS_END', '# END BWP Minify Headers');
+		define('BWP_MINIFY_WP_RULES_BEGIN', '# BEGIN BWP Minify WP Rules');
+		define('BWP_MINIFY_WP_RULES_END', '# END BWP Minify WP Rules');
 	}
 
 	function load_libraries()
@@ -299,11 +306,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 */
 	private function _get_blog_path()
 	{
-		global $current_blog;
-
 		if (!self::is_multisite())
 			return '';
 
+		global $current_blog;
 		$blog_path = isset($current_blog->path) && '/' != $current_blog->path
 			? $current_blog->path
 			: '';
@@ -475,17 +481,27 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 	}
 
+	private function _get_wp_doc_root()
+	{
+		$wp_doc_root = !empty($_SERVER['SCRIPT_FILENAME'])
+			&& $_SERVER['SCRIPT_FILENAME'] != $_SERVER['PHP_SELF']
+			? dirname(str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME']))
+			: ABSPATH;
+
+		// script filename contains `wp-admin` when in admin so we need to remove them
+		return is_admin() ? str_replace('/wp-admin', '', $wp_doc_root) : $wp_doc_root;
+	}
+
 	/**
 	 * Gets WordPress document root or document root from admin input
 	 *
 	 * @since 1.3.0
-	 * @uses bwp_get_home_path clone of WordPress's get_home_path
 	 * @return string
 	 */
 	function get_doc_root($path = '')
 	{
 		$server_doc_root = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
-		$wp_doc_root = bwp_get_home_path();
+		$wp_doc_root = $this->_get_wp_doc_root();
 
 		$doc_root = empty($server_doc_root) || 0 !== strpos($wp_doc_root, $server_doc_root)
 			? $wp_doc_root : $server_doc_root;
@@ -532,22 +548,72 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return apply_filters('bwp_minify_cache_dir_dir', $cache_dir);
 	}
 
+	private function _get_default_fly_min_path()
+	{
+		return trailingslashit($this->plugin_wp_url) . 'cache/';
+	}
+
+	/**
+	 * Gets friendly minify url path based on user input
+	 *
+	 * @since 1.3.0
+	 * @param $need_host bool whether or not to prepend a http host to the
+	 *        url path to form a friendly url.
+	 * @return string when `$need_host` is true this should return a fully
+	 *         qualify URL to minified contents, when false the url path will
+	 *         be returned for further use (such as writing rewrite rules)
+	 */
 	function get_fly_min_path($need_host = false)
 	{
+		// blog path needs to be removed from the fly min path when shown in
+		// setting page but needs to be added when used to contruct the fly url
+		// (i.e. when `$need_host` is true)
+		$blog_path = $this->_get_blog_path();
+
 		if (empty($this->options['input_cache_dir'])
 			|| $this->options['input_cache_dir'] == $this->get_default_cache_dir()
 		) {
-			$fly_min_path = $this->plugin_wp_url;
-			$fly_min_path = trailingslashit($fly_min_path) . 'cache/';
+			$fly_min_path = $this->_get_default_fly_min_path();
+			$fly_min_path = !empty($blog_path) && false == $need_host
+				? preg_replace('#' . $blog_path . '#ui', '/', $fly_min_path, 1)
+				: $fly_min_path;
 		}
 		else
 		{
 			$cache_dir = $this->get_cache_dir();
-			if (0 !== strpos($cache_dir, $this->get_doc_root()))
-				return false == $need_host ? false : $this->http_host;
+			$doc_root  = $this->get_doc_root();
+			if (0 !== strpos($cache_dir, $doc_root)
+				|| empty($doc_root) || '/' == $doc_root
+			) {
+				// cache directory doesn't seem to live under document root,
+				// use the default fly min path so that friendly minify url
+				// doesn't break user's website
+				return false == $need_host ? false : $this->_get_default_fly_min_path();
+			}
 
-			$fly_min_path = str_replace($this->get_doc_root(), '', $cache_dir);
+			// guessing the min path by removing document root from cache dir
+			$fly_min_path = str_replace($doc_root, '', $cache_dir);
 			$fly_min_path = ltrim($fly_min_path, '/');
+
+			// add blog path to fly min path if blog path is not empty, this is
+			// for correct urls served to visitors
+			if (!empty($blog_path) && $need_host)
+			{
+				$fly_min_path = !empty($this->base)
+					? preg_replace('#^' . $this->base . '/#ui',
+						$this->base . $blog_path,
+						$fly_min_path, 1)
+					: ltrim($blog_path . $fly_min_path, '/');
+			}
+
+			// remove base from fly min path if we don't need host, this is
+			// for correct rewrite rules
+			if (!empty($this->base) && false == $need_host)
+			{
+				$fly_min_path = preg_replace('#^' . $this->base . '/#ui',
+					'', $fly_min_path, 1);
+			}
+
 			$fly_min_path = trailingslashit($this->http_host) . trailingslashit($fly_min_path);
 		}
 
@@ -567,15 +633,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 	function init_properties()
 	{
+		$this->get_base();
+		$this->buster = $this->get_buster($this->options['select_buster_type']);
 		$this->min_path = $this->get_min_path();
 		$this->min_cache_dir = $this->get_cache_dir();
 		$this->min_url = trailingslashit($this->http_host) . ltrim($this->min_path, '/');
 		$this->doc_root = $this->get_doc_root();
 		$this->fly_min_path = $this->get_fly_min_path();
 		$this->fly_min_url = $this->get_fly_min_url();
-
-		$this->get_base();
-		$this->buster = $this->get_buster($this->options['select_buster_type']);
 
 		// init the detector class, responsible for detecting and logging
 		// enqueued files
@@ -605,16 +670,18 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 *         'written' if rewrite rules are there but file is not writable
 	 *         (probably manual update)
 	 */
-	private function _write_rewrite_rules($file, $rules)
+	private function _write_rewrite_rules($file, $rules, $rule_begin, $rule_end, $type)
 	{
-		$rule_begin    = BWP_MINIFY_RULES_BEGIN . "\n";
-		$rule_end      = BWP_MINIFY_RULES_END . "\n";
-		$rules_clean   = empty($rules) ? $this->_get_rewrite_rules() : $rules;
+		$rule_begin    .= "\n";
+		$rule_end      .= "\n";
+		$rules          = !empty($rules) ? $rule_begin . $rules . $rule_end : '';
+		$rules_clean    = !empty($rules)
+			? $rules : $rule_begin . $this->_get_rewrite_rules($type) . $rule_end;
 
-		$current_rules = file_get_contents($file);
-		$current_rules = false === $current_rules ? '' : $current_rules;
-		$begin         = strpos($current_rules, $rule_begin);
-		$end           = strpos($current_rules, $rule_end);
+		$current_rules  = file_get_contents($file);
+		$current_rules  = false === $current_rules ? '' : $current_rules;
+		$begin          = strpos($current_rules, $rule_begin);
+		$end            = strpos($current_rules, $rule_end);
 
 		$current_rules_clean = preg_replace('/[\r\n]+/', "\n", $current_rules);
 		if (!empty($rules) && false !== strpos($current_rules_clean, $rules_clean))
@@ -629,13 +696,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		else
 		{
 			// otherwise we add/update rewrite rules in the file
-			$begin  = false === $begin ? 0 : $begin;
 			$end    = false === $end ? 0 : $end;
-			$length = $end > $begin ? $end - $begin + strlen($rule_end) : 0;
+			$length = $end > $begin && false !== $begin
+				? $end - $begin + strlen($rule_end) : 0;
 
-			$current_rules  = substr_replace(
-				$current_rules, $rules, $begin, $length
-			);
+			$begin  = false === $begin ? 0 : $begin;
+			$current_rules  = empty($length) && empty($rules)
+				? $current_rules
+				: substr_replace($current_rules, $rules, $begin, $length);
 		}
 
 		if (false === @file_put_contents($file, $current_rules))
@@ -653,16 +721,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 */
 	private function _add_rewrite_rules($suppress = true)
 	{
-		$config_dir  = $this->_get_server_config_dir();
-		$config_file = $this->_get_server_config_file();
-		$rules       = $this->_get_rewrite_rules();
+		$config_dir  = $this->_get_cache_config_dir();
+		$config_file = $this->_get_cache_config_file();
+		$rules       = $this->_get_rewrite_rules('cache');
+
+		// if we're on sub-directory multisite installation, add rules to the
+		// root `.htaccess` file to handle friendly minify urls
+		if (self::is_multisite() && !self::is_subdomain_install())
+			$this->_add_wp_rewrite_rules();
 
 		if (file_exists($config_file) || is_writable($config_dir))
 		{
 			// server config file exists, OR doesn't exist but
 			// directory is writable, attemp to create a new file, and
 			// write rewrite rules to it
-			return $this->_write_rewrite_rules($config_file, $rules);
+			$rule_begin = BWP_MINIFY_RULES_BEGIN;
+			$rule_end   = BWP_MINIFY_RULES_END;
+			return $this->_write_rewrite_rules(
+				$config_file, $rules, $rule_begin, $rule_end, 'cache'
+			);
 		}
 
 		// no need to check for error
@@ -682,16 +759,39 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return false;
 	}
 
-	private function _remove_rewrite_rules()
+	private function _add_wp_rewrite_rules()
 	{
-		$config_file = $this->_get_server_config_file();
+		$config_file  = $this->_get_wp_config_file();
+		$rules        = $this->_get_rewrite_rules('wp');
+		$fly_min_path = $this->get_fly_min_path();
 
-		// only remove rewrite rules if file exist
-		if (file_exists($config_file))
-			$this->_write_rewrite_rules($config_file, '');
+		// only add these rules if `wp-content` is not already in fly min path
+		$rule_begin   = BWP_MINIFY_WP_RULES_BEGIN;
+		$rule_end     = BWP_MINIFY_WP_RULES_END;
+		if (file_exists($config_file) && false === strpos($fly_min_path, 'wp-content'))
+			return $this->_write_rewrite_rules(
+				$config_file, $rules, $rule_begin, $rule_end, 'wp'
+			);
 	}
 
-	private function _get_server_config_file()
+	private function _remove_rewrite_rules()
+	{
+		// remove rewrite rules in cache directory
+		$config_file = $this->_get_cache_config_file();
+		$rule_begin  = BWP_MINIFY_RULES_BEGIN;
+		$rule_end    = BWP_MINIFY_RULES_END;
+		if (file_exists($config_file))
+			$this->_write_rewrite_rules($config_file, '', $rule_begin, $rule_end, 'cache');
+
+		// remove rewrite rules in WP root directory
+		$config_file = $this->_get_wp_config_file();
+		$rule_begin  = BWP_MINIFY_WP_RULES_BEGIN;
+		$rule_end    = BWP_MINIFY_WP_RULES_END;
+		if (file_exists($config_file))
+			$this->_write_rewrite_rules($config_file, '', $rule_begin, $rule_end, 'wp');
+	}
+
+	private function _get_cache_config_file()
 	{
 		if (self::is_nginx())
 		{
@@ -705,13 +805,20 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 	}
 
-	private function _get_server_config_dir()
+	private function _get_cache_config_dir()
 	{
 		if (self::is_nginx())
 			return '';
 		else
 			// right now we assume apache is used when nginx is not available
 			return $this->get_cache_dir();
+	}
+
+	private function _get_wp_config_file()
+	{
+		$config_dir   = $this->_get_wp_doc_root();
+		$config_file  = trailingslashit($config_dir) . '.htaccess';
+		return $config_file;
 	}
 
 	private function _get_response_headers()
@@ -751,15 +858,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return $header_begin . $headers . $header_end;
 	}
 
-	private function _get_rewrite_rules()
+	private function _get_rewrite_rules($type)
 	{
-		// make use of WordPress's base
-		$base   = parse_url(home_url());
-		$base   = isset($base['path']) ? trailingslashit($base['path']) : '/';
+		switch ($type)
+		{
+			case 'cache':
+				return $this->_get_cache_rewrite_rules();
+				break;
 
-		$rule_begin = BWP_MINIFY_RULES_BEGIN . "\n";
-		$rule_end   = BWP_MINIFY_RULES_END . "\n";
-		$rules      = array();
+			case 'wp':
+				return $this->_get_wp_rewrite_rules();
+				break;
+		}
+	}
+
+	private function _get_cache_rewrite_rules()
+	{
+		// make use of WordPress's base, with blog path removed if any
+		$base    = $this->_get_wp_base();
+		$rules   = array();
 
 		$rules[] = '<IfModule mod_rewrite.c>';
 		$rules[] = 'RewriteEngine On';
@@ -772,7 +889,23 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$rules[] = '</IfModule>' . "\n";
 
 		$rules   = $this->_get_response_headers() . implode("\n", $rules);
-		$rules   = $rule_begin . $rules . $rule_end;
+		return $rules;
+	}
+
+	private function _get_wp_rewrite_rules()
+	{
+		// get fly min path and remove the base
+		$fly_min_path = ltrim($this->get_fly_min_path(), '/');
+		$rules        = array();
+
+		$rules[] = '<IfModule mod_rewrite.c>';
+		$rules[] = 'RewriteEngine On';
+		$rules[] = 'RewriteCond %{REQUEST_FILENAME} !-f';
+		$rules[] = 'RewriteRule ^([_0-9a-zA-Z-]+/)?'
+			. '(' . $fly_min_path . 'minify-.*\.(js|css))$ $2 [L]';
+		$rules[] = '</IfModule>' . "\n";
+
+		$rules = implode("\n", $rules);
 		return $rules;
 	}
 
@@ -1275,7 +1408,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					'input' => array(
 						'input_fly_minpath' => array(
 							'size' => 55,
-							'label' => $this->_get_input_fly_minpath_label()
+							'label' => $this->_get_input_fly_min_path_label()
 						),
 						'input_cdn_host' => array(
 							'size' => 40,
@@ -1441,11 +1574,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				}
 			}
 
-			// other formatting applied to saved settings
-			if ($page == BWP_MINIFY_OPTION_ADVANCED)
-			{
-			}
-
 			// update per-blog options
 			update_option($active_page, $options);
 			// if current user is super admin, allow him to update site-only
@@ -1538,7 +1666,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. 'Please make sure that it is writable and try again, '
 							. 'or you can manually update the config file '
 							. 'using auto-generated contents as shown below.', $this->domain),
-							$this->_get_server_config_file()
+							$this->_get_cache_config_file()
 						));
 					}
 					else if ('write_file' === $result)
@@ -1549,7 +1677,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. __('The server config file <code>%s</code> '
 							. 'is not writable, please manually update it '
 							. 'using auto-generated contents as shown below.', $this->domain),
-							$this->_get_server_config_file()
+							$this->_get_cache_config_file()
 						));
 					}
 					else if ('exists_dir' === $result || 'write_dir' === $result)
@@ -1562,7 +1690,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. 'does not exist and could not be automatically created, '
 							. 'please manually create it using auto-generated '
 							. 'contents as shown below.', $this->domain),
-							$this->_get_server_config_file()
+							$this->_get_cache_config_file()
 						));
 					}
 
@@ -1640,6 +1768,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			// and this is not super-admin
 			if (self::is_normal_admin())
 				$bwp_option_page->kill_html_fields($form, array(7,8,9,10,11,12));
+		}
+		else if ($page == BWP_MINIFY_OPTION_ADVANCED)
+		{
+			// Remove all super admin only settings if we're in multisite
+			// and this is not super-admin
+			if (self::is_normal_admin())
+				$bwp_option_page->kill_html_fields($form, array(2));
 		}
 
 		// check for rewrite rules if needed, suppress error
@@ -1735,12 +1870,12 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return $button;
 	}
 
-	private function _get_input_fly_minpath_label()
+	private function _get_input_fly_min_path_label()
 	{
-		$fly_minpath = $this->get_fly_min_path();
+		$fly_min_path = $this->get_fly_min_path();
 		$label = '';
 
-		if (false == $fly_minpath)
+		if (false == $fly_min_path)
 			$label = '<br />' . sprintf(
 				__('BWP Minify was not able to auto-detect friendly url based on '
 				. 'your current cache directory (<code>%s</code>). You must '
@@ -1755,7 +1890,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				. 'based on your current cache directory (<code>%s</code>). '
 				. 'The URL path (either manually entered or auto-detected) '
 				. 'must correctly link to your current cache directory.', $this->domain),
-				$fly_minpath, $this->get_cache_dir()
+				$fly_min_path, $this->get_cache_dir()
 			);
 
 		if (self::is_multisite() && !self::is_subdomain_install())
@@ -1764,7 +1899,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				__('In a sub-directory multisite environment, '
 				. 'a blog path will be added before the URL path (e.g. <code>%s</code>) '
 				. 'when friendly Minify urls are served.', $this->domain),
-				'/blog1' . $fly_minpath
+				'/blog1' . $fly_min_path
 			);
 		}
 
@@ -1774,7 +1909,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _get_input_doc_root_label()
 	{
 		$doc_root = $_SERVER['DOCUMENT_ROOT'];
-		$wp_doc_root = bwp_get_home_path();
+		$wp_doc_root = $this->_get_wp_doc_root();
 
 		// if server document root is empty, or is invalid (i.e. WordPress
 		// does NOT live under it), we use WordPress document root
@@ -1834,7 +1969,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			. 'manually using auto-generated contents as shown below. '
 			. 'You should be able to find the server config file at <code>%s</code>, '
 			. 'if not, you must first create it.', $this->domain) . '</strong>';
-		$output  = sprintf($output, $this->_get_server_config_file());
+		$output  = sprintf($output, $this->_get_cache_config_file());
 		$output .= '<br /><br />';
 		$output .= '<textarea class="code" rows="8" cols="90" readonly="readonly">'
 			. $rules . '</textarea>';
@@ -2007,8 +2142,19 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$this->print_positions = $positions;
 	}
 
+	private function _get_wp_base()
+	{
+		$blog_path = $this->_get_blog_path();
+		$base      = parse_url(home_url());
+		$base      = isset($base['path']) ? trailingslashit($base['path']) : '/';
+
+		return !empty($blog_path)
+			? preg_replace('#' . $blog_path . '#ui', '/', $base, 1)
+			: $base;
+	}
+
 	/**
-	 * Sets a base to prepend relative media sources
+	 * Gets a base to prepend relative media sources
 	 *
 	 * The base is deduced from siteurl (the folder where actual WordPress
 	 * files are located.), so if WP files are located in /blog instead of
