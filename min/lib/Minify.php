@@ -565,9 +565,10 @@ class Minify {
     {
         // if friendly minify url is used we use a new naming structure for
         // cached files
-        $name    = trim(strip_tags($_GET['name']));
-        $ext     = trim(strip_tags($_GET['type']));
-        $blog_id = (int) $_GET['bid'];
+        // FIXME cleanup
+        $name    = isset($_GET['name']) ? trim(strip_tags($_GET['name'])) : '';
+        $ext     = isset($_GET['type']) ? trim(strip_tags($_GET['type'])) : '';
+        $blog_id = isset($_GET['bid']) ? (int) $_GET['bid'] : '';
         if (!empty($blog_id) && !empty($name) && in_array($ext, array('js', 'css')))
             return "{$prefix}-b{$blog_id}-{$name}.{$ext}";
 
