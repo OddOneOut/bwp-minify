@@ -1994,7 +1994,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 */
 	function get_base()
 	{
-		$site_url = get_site_option('siteurl');
+		$site_url = get_site_url();
 		$base = trim(str_replace($this->http_host, '', $site_url), '/');
 
 		// @since 1.3.0 - guess min dir to check for any dir that we have to
