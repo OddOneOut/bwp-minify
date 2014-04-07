@@ -391,6 +391,10 @@ class BWP_Enqueued_Detector
 	 */
 	private function _get_position($item)
 	{
+		// FIXME temporarily prevent missing key notices 
+		if (!isset($item['position'])) {
+			return __('~no position~', $this->_domain);
+		}
 		$position = $item['position'];
 		if ('oblivion' != $position)
 		{
