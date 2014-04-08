@@ -257,7 +257,7 @@ class BWP_Enqueued_Detector
 			if ($group_handle == $item['group'])
 			{
 				$item['position'] = $new_position;
-				$item['position'] = $this->_get_position($log);
+				$item['position'] = $this->_get_position($item);
 			}
 		}
 	}
@@ -399,8 +399,8 @@ class BWP_Enqueued_Detector
 				: __('footer', $this->_domain);
 		}
 
-		$min = $item['min']; // minify needed
-		$wp = $item['wp']; // minify but print separately
+		$min = isset($item['min']) && $item['min']; // minify needed
+		$wp = isset($item['wp']) && $item['wp']; // minify but print separately
 
 		if ($min)
 		{
