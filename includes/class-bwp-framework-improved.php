@@ -582,8 +582,7 @@ class BWP_FRAMEWORK_IMPROVED {
 				? $this->option_keys[$key]
 				: $this->extra_option_keys[$key];
 
-			$this->form_tabs[$page] = get_option('siteurl')
-				. '/wp-admin/' . $option_script
+			$this->form_tabs[$page] = admin_url($option_script)
 				. '?page=' . $pagelink;
 		}
 	}
@@ -640,7 +639,7 @@ class BWP_FRAMEWORK_IMPROVED {
 		}
 	}
 
-	protected static function is_multisite()
+	public static function is_multisite()
 	{
 		if (function_exists('is_multisite') && is_multisite())
 			return true;
@@ -654,7 +653,7 @@ class BWP_FRAMEWORK_IMPROVED {
 		return false;
 	}
 
-	protected static function is_subdomain_install()
+	public static function is_subdomain_install()
 	{
 		if (defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL)
 			return true;

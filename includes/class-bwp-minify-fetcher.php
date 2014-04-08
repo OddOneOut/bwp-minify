@@ -229,36 +229,6 @@ class BWP_Minify_Fetcher
 	}
 
 	/**
-	 * Checks whether all required rewrite rules are added
-	 *
-	 * If for some reasons rewrite rules required to serve friendly minify urls
-	 * are not available, no friendly minify urls should replace regular ones.
-	 *
-	 * @return bool
-	 */
-	private function _are_rewrite_rules_ready()
-	{
-		if ($this->_rewrite_rules_ready)
-			return true;
-
-		// WordPress permalink is not enabled
-		$permalink = get_option('permalink_structure');
-		if (empty($permalink))
-			return false;
-
-		$min_path = ltrim($this->_options['input_fly_minpath'], '/');
-		$pattern  = $min_path . $this->_rewrite_pattern;
-		$rewrite_rules = get_option('rewrite_rules');
-		if (!isset($rewrite_rules[$pattern]))
-			return false;
-
-		// cache this result
-		$this->_rewrite_rules_ready = true;
-
-		return true;
-	}
-
-	/**
 	 * Gets the original request headers
 	 *
 	 * @return array
@@ -281,58 +251,13 @@ class BWP_Minify_Fetcher
 		return $headers;
 	}
 
-	/**
-	 * Gets Minify's cached filename from a raw Minify string
-	 *
-	 * This actually mimics method `_getCacheId()` in
-	 * `/min/lib/Minify.php:564-ish` to generate a cache filename that matches
-	 * Minify's cache filename (a.k.a cacheId). In order for this to work the
-	 * Minify class was also modified to make it easier to generate a correct
-	 * cache filename (@see `/min/lib/Minify.php:569`).
-	 *
-	 * @param $string string the original string that contains paths to files
-	 *        as a comma-separated list
-	 * @return string|bool false if cached filename is not found
-	 */
-	private function _get_cache_id($string)
-	{
-		// from Minify library
-		$prefix = 'minify';
-		$name = preg_replace('/[^a-zA-Z0-9\\.=_,]/', '', $string);
-		$name = preg_replace('/\\.+/', '.', $name);
-		$name = substr($name, 0, 100 - 34 - strlen($prefix));
-		$hash = md5(serialize(array(
-			$name, $this->_minify_version
-		)));
-
-		// need to ensure that the cached file does exist
-		if (false == $this->_is_cache_valid($cache_id))
-			return false;
-
-		// we only need the first 15 chars of md5 hash
-		return substr($cache_id, 0, 15);
-	}
-
-	private function _is_cache_valid($cache_id, $prefix = 'minify')
-	{
-		$cache_dir = trailingslashit($this->_options['input_cache_dir']);
-		$filename = $cache_dir . $prefix . '_' . $hash;
-
-		if (is_readable($filename))
-			return true;
-		else
-			return false;
-	}
-
 	private function _register_hooks()
 	{
 		add_action('parse_request', array($this, 'serve'));
 		add_filter('bwp_get_minify_src', array($this, 'friendlify_src'), 10, 4);
 	}
 
-	private function _init_properties()
-	{
-	}
+	private function _init_properties() {}
 
 	private function _init()
 	{
