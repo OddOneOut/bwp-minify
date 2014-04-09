@@ -1033,7 +1033,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							'size' => 55,
 							'label' => '<br />' . sprintf(
 								__('Leave empty to use default value, which is <code>%s</code>.<br />'
-								. 'Please read <a href="%s#customization">here</a> '
+								. 'Please read <a href="%s#advanced_customization">here</a> '
 								. 'to know how to properly modify this.', $this->domain),
 								$this->get_default_min_path(), $this->plugin_url)
 						),
@@ -1050,7 +1050,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 								. 'Cache directory must be writable '
 								. '(i.e. CHMOD to 755 or 777). '
 								. 'More details can be found '
-								. '<a href="%s#advanced_customization" target="_blank">here</a>. ', $this->domain),
+								. '<a href="%s#minify_cache_directory" target="_blank">here</a>. ', $this->domain),
 								$this->get_default_cache_dir(), $this->plugin_url)
 						),
 						'input_maxfiles' => array(
