@@ -399,8 +399,8 @@ class BWP_Enqueued_Detector
 				: __('footer', $this->_domain);
 		}
 
-		$min = isset($item['min']) && $item['min']; // minify needed
-		$wp = isset($item['wp']) && $item['wp']; // minify but print separately
+		$min = $item['min']; // minify needed
+		$wp = $item['wp']; // minify but print separately
 
 		if ($min)
 		{
