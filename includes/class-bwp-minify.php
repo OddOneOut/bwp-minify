@@ -577,7 +577,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			? $this->options['input_cache_dir']
 			: $this->get_default_cache_dir();
 
-		return apply_filters('bwp_minify_cache_dir_dir', $cache_dir);
+		return apply_filters('bwp_minify_cache_dir', $cache_dir);
 	}
 
 	private function _get_default_fly_min_path()

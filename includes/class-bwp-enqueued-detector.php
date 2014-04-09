@@ -288,7 +288,7 @@ class BWP_Enqueued_Detector
 			if ($group_handle == $item['group'])
 			{
 				$item['position'] = $new_position;
-				$item['position'] = $this->_get_position($log);
+				$item['position'] = $this->_get_position($item);
 			}
 		}
 	}
