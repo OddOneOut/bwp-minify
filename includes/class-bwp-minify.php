@@ -423,8 +423,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		// @since 1.3.0 we get a path relative to root for Minify instead of an
 		// absolute URL to add compatibility to staging or mirror site.
 		$min_path = preg_replace('#https?://[^/]+#ui', '', $this->plugin_wp_url);
-		$min_path = apply_filters('bwp_minify_min_dir', $min_path . 'min/');
-		$min_path = apply_filters('bwp_minify_min_path', $min_path);
+		$min_path = $min_path . 'min/';
 
 		$this->default_min_path = $min_path;
 		return $min_path;
@@ -438,9 +437,18 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 */
 	function get_min_path()
 	{
-		return empty($this->options['input_minpath'])
+		$min_path = empty($this->options['input_minpath'])
 			? $this->get_default_min_path()
 			: $this->options['input_minpath'];
+
+		$min_path = apply_filters('bwp_minify_min_dir', $min_path);
+		$min_path = apply_filters('bwp_minify_min_path', $min_path);
+
+		// allow overidden of the generated min path via constants
+		$min_path = defined('BWP_MINIFY_MIN_PATH') && !empty(BWP_MINIFY_MIN_PATH)
+			? BWP_MINIFY_MIN_PATH : $min_path;
+
+		return $min_path;
 	}
 
 	/**
@@ -576,6 +584,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$cache_dir = !empty($this->options['input_cache_dir'])
 			? $this->options['input_cache_dir']
 			: $this->get_default_cache_dir();
+
+		// allow overidden of the generated cache dir via constants
+		$cache_dir = defined('BWP_MINIFY_CACHE_DIR') && !empty(BWP_MINIFY_CACHE_DIR)
+			? BWP_MINIFY_CACHE_DIR : $cache_dir;
 
 		return apply_filters('bwp_minify_cache_dir', $cache_dir);
 	}
