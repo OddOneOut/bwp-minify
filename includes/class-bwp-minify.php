@@ -445,7 +445,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$min_path = apply_filters('bwp_minify_min_path', $min_path);
 
 		// allow overidden of the generated min path via constants
-		$min_path = defined('BWP_MINIFY_MIN_PATH') && !empty(BWP_MINIFY_MIN_PATH)
+		$min_path = defined('BWP_MINIFY_MIN_PATH') && '' != BWP_MINIFY_MIN_PATH
 			? BWP_MINIFY_MIN_PATH : $min_path;
 
 		return $min_path;
@@ -586,7 +586,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			: $this->get_default_cache_dir();
 
 		// allow overidden of the generated cache dir via constants
-		$cache_dir = defined('BWP_MINIFY_CACHE_DIR') && !empty(BWP_MINIFY_CACHE_DIR)
+		$cache_dir = defined('BWP_MINIFY_CACHE_DIR') && '' != BWP_MINIFY_CACHE_DIR
 			? BWP_MINIFY_CACHE_DIR : $cache_dir;
 
 		return apply_filters('bwp_minify_cache_dir', $cache_dir);
