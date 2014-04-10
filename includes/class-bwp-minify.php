@@ -630,9 +630,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				|| empty($doc_root) || '/' == $doc_root
 			) {
 				// cache directory doesn't seem to live under document root,
-				// use the default fly min path so that friendly minify url
-				// doesn't break user's website
-				return false == $need_host ? false : $this->_get_default_fly_min_path();
+				// return false to not use friendly minify urls
+				return false;
 			}
 
 			// guessing the min path by removing document root from cache dir
@@ -1170,8 +1169,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						__('Friendly Minify Urls', $this->domain),
 						__('Enable friendly Minify urls', $this->domain),
 						sprintf(
-							__('Friendly Minify url path (relative to <code>%s</code>)', $this->domain),
-							get_site_option('siteurl')
+							__('Friendly Minify url path (relative to '
+							. 'your Site/Network Address). More info <a href="%s#friendly_minify_urls" '
+							. 'target="_blank">here</a>.', $this->domain),
+							$this->plugin_url
 						),
 						__('Path to Nginx config file', $this->domain),
 						__('Content Delivery Network (CDN)', $this->domain),

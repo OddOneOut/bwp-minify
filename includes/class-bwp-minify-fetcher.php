@@ -165,6 +165,11 @@ class BWP_Minify_Fetcher
 	 */
 	public function friendlify_src($string, $original_string, $group_handle, $buster)
 	{
+		// need to check whether a valid minify urls is set, if not we should
+		// return the regular Minify string
+		if (false === $this->_min_fly_url)
+			return $string;
+
 		// get extension from minify string, this determines the type of source
 		// we're dealing with
 		$ext = preg_match('/\.([^\.]+)$/ui', $original_string, $matches)
