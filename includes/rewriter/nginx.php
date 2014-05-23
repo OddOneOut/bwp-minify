@@ -59,6 +59,9 @@ class BWP_Minify_Rewriter_Nginx extends BWP_Minify_AbstractRewriter
 		$rules[] = '}';
 		$rules[] = 'if (!-e $request_filename) {';
 
+		// nginx rewrite rules and location directive do not match query
+		// variable so `/path/to/file.js` is the same as `/path/to/file.js?ver=1`
+
 		if (BWP_MINIFY::is_multisite() && !BWP_MINIFY::is_subdomain_install())
 		{
 			// special rewrite rules for sub-directory multisite environment

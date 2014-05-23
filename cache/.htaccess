@@ -1,3 +1,35 @@
+# BEGIN BWP Minify Rules
+# BEGIN BWP Minify Headers
+<Files "*.js.gz">
+ForceType application/x-javascript
+</Files>
+<Files "*.css.gz">
+ForceType text/css
+</Files>
+<IfModule mod_mime.c>
+AddEncoding gzip .gz
+AddCharset utf-8 .js .css
+</IfModule>
+<IfModule mod_deflate.c>
+    <IfModule mod_setenvif.c>
+    SetEnvIfNoCase Request_URI "\.gz$" no-gzip
+    </IfModule>
+</IfModule>
+<IfModule mod_headers.c>
+Header set Cache-Control "public, max-age=7200"
+Header set Vary "Accept-Encoding"
+Header unset ETag
+</IfModule>
+# END BWP Minify Headers
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTP:Accept-Encoding} gzip
+RewriteRule .* - [E=ZIP_EXT:.gz]
+RewriteCond %{REQUEST_FILENAME}%{ENV:ZIP_EXT} -f
+RewriteRule (.*) $1%{ENV:ZIP_EXT} [L]
+RewriteRule ^minify-b(\d+)-([a-zA-Z0-9-_.]+)\.(css|js)(\?ver=[a-zA-Z0-9.]+)?$ /index.php?blog=$1&min_group=$2&min_type=$3 [L]
+</IfModule>
+# END BWP Minify Rules
 <Limit POST PUT DELETE>
 Order Allow,Deny
 Deny from All

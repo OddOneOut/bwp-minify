@@ -117,8 +117,8 @@ class BWP_Minify_Rewriter_Apache extends BWP_Minify_AbstractRewriter
 
 		// only add these rules if `wp-content` is not already in fly min path
 		$fly_min_path = $this->main->get_fly_min_path();
-		if (file_exists($this->config_file)
-			&& false === strpos($fly_min_path, 'wp-content')
+		if (false === strpos($fly_min_path, 'wp-content')
+			&& file_exists($this->config_file)
 		) {
 			return $this->write_rewrite_rules($this->rules);
 		}
@@ -131,7 +131,7 @@ class BWP_Minify_Rewriter_Apache extends BWP_Minify_AbstractRewriter
 		if (file_exists($this->config_file) || is_writable($this->config_dir))
 		{
 			// server config file exists, OR doesn't exist but
-			// directory is writable, attemp to create a new file, and
+			// directory is writable, attempt to create a new file, and
 			// write rewrite rules to it
 			return $this->write_rewrite_rules($this->rules);
 		}

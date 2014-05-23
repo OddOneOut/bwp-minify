@@ -57,6 +57,13 @@ class BWP_FRAMEWORK_IMPROVED {
 	var $plugin_url;
 
 	/**
+	 * Urls to various parts of homepage or other places
+	 *
+	 * Expect to have a format of array('relative' => bool, 'url' => url)
+	 */
+	var $urls = array();
+
+	/**
 	 * Plugin file
 	 */
 	var $plugin_file;
@@ -104,7 +111,7 @@ class BWP_FRAMEWORK_IMPROVED {
 	/**
 	 * Other things
 	 */
-	var $wp_ver = '2.8';
+	var $wp_ver = '3.0';
 	var $php_ver = '5';
 	var $domain = '';
 
@@ -503,27 +510,34 @@ class BWP_FRAMEWORK_IMPROVED {
 		/* intentionally left blank */
 	}
 
-	protected function is_admin_page()
+	protected function is_admin_page($page = '')
 	{
 		if (is_admin() && !empty($_GET['page'])
 			&& (in_array($_GET['page'], $this->option_keys)
-			|| in_array($_GET['page'], $this->extra_option_keys))
+				|| in_array($_GET['page'], $this->extra_option_keys))
+			&& (empty($page)
+				|| (!empty($page) && $page == $_GET['page']))
 		) {
 			return true;
 		}
 	}
 
-	public function plugin_action_links($links, $file)
+	public function get_admin_page($page)
 	{
 		$option_script = !$this->_menu_under_settings && !$this->_simple_menu
 			? 'admin.php'
 			: 'options-general.php';
+
+		return add_query_arg(array('page' => $page), admin_url($option_script));
+	}
+
+	public function plugin_action_links($links, $file)
+	{
 		$option_keys = array_values($this->option_keys);
 
 		if (false !== strpos(plugin_basename($this->plugin_file), $file))
 		{
-			$links[] = '<a href="' . $option_script . '?page='
-				. $option_keys[0] . '">'
+			$links[] = '<a href="' . $this->get_admin_page($option_keys[0]) . '">'
 				. __('Settings') . '</a>';
 		}
 
@@ -637,6 +651,28 @@ class BWP_FRAMEWORK_IMPROVED {
 			}
 			$this->error_shown = true;
 		}
+	}
+
+	public function add_url($key, $url, $relative = true)
+	{
+		$this->urls[$key] = array(
+			'relative' => $relative,
+			'url' => $url
+		);
+	}
+
+	public function get_url($key)
+	{
+		if (isset($this->urls[$key]))
+		{
+			$url = $this->urls[$key];
+			if ($url['relative'])
+				return trailingslashit($this->plugin_url) . $url['url'];
+
+			return $url['url'];
+		}
+
+		return '';
 	}
 
 	public static function is_multisite()

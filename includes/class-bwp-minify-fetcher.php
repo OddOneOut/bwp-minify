@@ -16,6 +16,8 @@ class BWP_Minify_Fetcher
 
 	private $_options = array();
 
+	private $_main;
+
 	private $_detector;
 
 	private $_min_url = '';
@@ -38,6 +40,11 @@ class BWP_Minify_Fetcher
 		$this->_domain  = $domain;
 
 		$this->_init();
+	}
+
+	public function set_main($main)
+	{
+		$this->_main = $main;
 	}
 
 	public function set_detector($detector)
@@ -82,9 +89,15 @@ class BWP_Minify_Fetcher
 			&& in_array($_GET['min_type'], array('js', 'css'))
 			? $_GET['min_type']
 			: '';
-		$blog_id = isset($_GET['blog']) ? (int) $_GET['blog'] : 0;
+		$bid = isset($_GET['blog']) ? (int) $_GET['blog'] : 0;
 
-		if (empty($group_handle) || empty($type) || empty($blog_id))
+		if (empty($group_handle) || empty($type) || empty($bid))
+			// if missing any important data, do not proceed
+			return;
+
+		global $blog_id;
+		if ($bid != $blog_id)
+			// if not on the correct blog, do not proceed
 			return;
 
 		$group = $this->_detector->get_group($group_handle);
@@ -98,56 +111,85 @@ class BWP_Minify_Fetcher
 			exit;
 		}
 
-		$string  = $group['string'];
-		$headers = $this->_get_request_headers();
-		$url = trailingslashit($this->_min_url)
-			. '?f=' . $string
-			. '&name=' . $group_handle
-			. '&type=' . $type
-			. '&bid=' . $blog_id;
+		// load Minify class based on default or custom Minify directory
+		$min_dir = $this->_main->get_min_dir();
 
-		// try to fetch actual minified contents from regular Minify url while
-		// preserving correct headers
-		$response = wp_remote_get($url, array(
-			'headers' => $headers,
-			'timeout' => 20,
-			'redirection' => 0,
-			'decompress' => false // keep the gzipped contents
-		));
-
-		// could not fetch minified contents, show an error message
-		if (is_wp_error($response))
+		if (empty($min_dir) || !file_exists($min_dir . 'config.php'))
 		{
-			echo sprintf(
-				__('Could not get minified contents for %s', $this->_domain),
-				$url
-			);
+			// if Minify directory is not valid or Minify library is not found
+			// we can not continue
+			_e('Invalid Minify directory, please check Minify settings.', $this->_domain);
 			exit;
 		}
 
-		// retrieve minified contents and headers, send all the headers issued
-		// by regular Minify url
-		$minified_contents = wp_remote_retrieve_body($response);
-		$minified_headers  = wp_remote_retrieve_headers($response);
-		$response_code     = wp_remote_retrieve_response_code($response);
-		foreach ($minified_headers as $header_name => $headers)
-		{
-			// get rid of etag header, powered-by header, and server header
-			$real_header_name = strtolower($header_name);
-			if ('etag' == $real_header_name || 'x-powered-by' == $real_header_name
-				|| 'server' == $real_header_name
-			) {
-				continue;
-			}
+		// prepare input for Minify to handle
+		$_GET['f'] = $group['string'];
 
-			foreach ((array) $headers as $header)
-				header($header_name . ': ' . $header);
+		if ($this->_options['enable_debug'] == 'yes')
+		{
+			// add debug flag if needed
+			$_GET['debug'] = 1;
+		}
+		else
+		{
+			// minified contents are often served compressed so it's best to turn off
+			// error reporting to avoid content encoding error, unless debug is
+			// enabled. This is useful when Minify doesn't catch all the notices
+			// (for example when the cache directory is not writable).
+			error_reporting(0);
 		}
 
-		// show minified contents with correct status code
-		$response_code = empty($minified_contents) ? 304 : $response_code;
-		status_header($response_code);
-		echo $minified_contents;
+		// load Minify classes
+		define('MINIFY_MIN_DIR', $min_dir);
+		require_once MINIFY_MIN_DIR . '/config.php';
+		require_once $min_libPath . '/Minify/Loader.php';
+		Minify_Loader::register();
+
+		// set some optional for the Minify application based on current settings
+		Minify::$uploaderHoursBehind = $min_uploaderHoursBehind;
+
+		// set cache file name (id) and cache path if needed
+		Minify::setCacheId('minify-b' . $blog_id . '-' . $group_handle . '.' . $type);
+		Minify::setCache(
+			isset($min_cachePath) ? $min_cachePath : '',
+			$min_cacheFileLocking
+		);
+
+		if ($min_documentRoot)
+		{
+			$_SERVER['DOCUMENT_ROOT'] = $min_documentRoot;
+			Minify::$isDocRootSet = true;
+		}
+
+		// set serve options for each file type if needed
+		$min_serveOptions['minifierOptions']['text/css']['symlinks'] = $min_symlinks;
+		foreach ($min_symlinks as $uri => $target)
+			$min_serveOptions['minApp']['allowDirs'][] = $target;
+
+		if ($min_allowDebugFlag)
+		{
+			// allow debugging Minify application
+			$min_serveOptions['debug'] = Minify_DebugDetector::shouldDebugRequest(
+				$_COOKIE,
+				$_GET,
+				$_SERVER['REQUEST_URI']
+			);
+		}
+
+		if ($min_errorLogger)
+		{
+			// log Minify error if allowed
+			if (true === $min_errorLogger)
+				$min_errorLogger = FirePHP::getInstance(true);
+
+			Minify_Logger::setLogger($min_errorLogger);
+		}
+
+		// serve minified contents, on the fly or from cache
+		$min_serveController = new Minify_Controller_MinApp();
+		Minify::serve($min_serveController, $min_serveOptions);
+
+		// for a proper response headers
 		exit;
 	}
 
@@ -200,7 +242,9 @@ class BWP_Minify_Fetcher
 			. 'b' . $blog_id . '-' . $group_handle
 			. '-' . $group_hash
 			. '.' . $ext;
-		$fly_url .= !empty($buster) ? '&#038;ver=' . $buster : '';
+
+		// add a cache buster if needed
+		$fly_url .= !empty($buster) ? '?ver=' . $buster : '';
 
 		return $fly_url;
 	}
@@ -258,8 +302,8 @@ class BWP_Minify_Fetcher
 
 	private function _register_hooks()
 	{
-		add_action('parse_request', array($this, 'serve'));
-		add_filter('bwp_get_minify_src', array($this, 'friendlify_src'), 10, 4);
+		add_action('parse_request', array($this, 'serve'), 1);
+		add_filter('bwp_minify_get_src', array($this, 'friendlify_src'), 10, 4);
 	}
 
 	private function _init_properties() {}

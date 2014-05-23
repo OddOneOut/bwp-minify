@@ -110,7 +110,7 @@ abstract class BWP_Minify_AbstractRewriter
 		$rules         = !empty($rules) ? $rule_begin . $rules . $rule_end : '';
 		$rules_clean   = !empty($rules) ? $rules : $rule_begin . $this->rules . $rule_end;
 
-		$current_rules = file_get_contents($this->config_file);
+		$current_rules = @file_get_contents($this->config_file);
 		$current_rules = false === $current_rules ? '' : $current_rules;
 		$begin         = strpos($current_rules, $rule_begin);
 		$end           = strpos($current_rules, $rule_end);
@@ -129,7 +129,7 @@ abstract class BWP_Minify_AbstractRewriter
 		{
 			// otherwise we add/update rewrite rules in the file
 			$end    = false === $end ? 0 : $end;
-			$length = $end > $begin && false !== $begin
+			$length = false !== $begin && $end > $begin
 				? $end - $begin + strlen($rule_end) : 0;
 
 			$begin  = false === $begin ? 0 : $begin;

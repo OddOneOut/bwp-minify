@@ -62,6 +62,13 @@ class Minify {
      */
     public static $isDocRootSet = false;
 
+	/**
+	 * Holds the cacheId passed via BWP Minify
+	 *
+	 * @var string
+	 */
+	public static $cacheId;
+
     /**
      * Specify a cache object (with identical interface as Minify_Cache_File) or
      * a path to use with Minify_Cache_File.
@@ -551,7 +558,12 @@ class Minify {
         }
         return $content;
     }
-    
+
+    public static function setCacheId($cacheId)
+    {
+        self::$cacheId = $cacheId;
+    }
+
     /**
      * Make a unique cache id for for this request.
      * 
@@ -564,13 +576,8 @@ class Minify {
     protected static function _getCacheId($prefix = 'minify')
     {
         // BEGIN BWP Minify Customization
-        // if friendly minify url is used we use a new naming structure for
-        // cached files
-        $name    = isset($_GET['name']) ? trim(strip_tags($_GET['name'])) : '';
-        $ext     = isset($_GET['ext']) ? trim(strip_tags($_GET['type'])) : '';
-        $blog_id = isset($_GET['bid']) ? (int) $_GET['bid'] : 0;
-        if (!empty($blog_id) && !empty($name) && in_array($ext, array('js', 'css')))
-            return "{$prefix}-b{$blog_id}-{$name}.{$ext}";
+        if (!empty(self::$cacheId))
+            return self::$cacheId;
         // switch cache path and create new directory if needed, this is for
         // multisite compatible, this is reserved for future version
         if (!empty($blog_id) && 1 == 2)

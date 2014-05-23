@@ -1,5 +1,6 @@
 /cache/minify-*
 /cache/minify_*
+*.ignore
 /.project
 /.buildpath
 /.settings

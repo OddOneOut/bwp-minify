@@ -15,6 +15,6 @@ License: GPLv3
 if (class_exists('BWP_MINIFY') || !defined('ABSPATH'))
 	return;
 
-// Frontend
-require_once('includes/class-bwp-minify.php');
+// Init the plugin
+require_once dirname(__FILE__) . '/includes/class-bwp-minify.php';
 $bwp_minify = new BWP_MINIFY();

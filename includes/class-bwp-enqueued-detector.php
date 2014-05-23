@@ -79,7 +79,8 @@ class BWP_Enqueued_Detector
 	 *
 	 * This function is called whenever a script is being added to a Minify
 	 * Group and it will get necessary data to store in the detector's log.
-	 * Stored data include: `handle`, `url (processed src)`, `dependencies`,
+	 * Stored data include: `handle`, `url` (processed src), `min` (minify or
+	 * ignore), `wp` (let WordPress handles or not), `dependencies`,
 	 * `position`, `group`
 	 *
 	 * @param $handle string handle of the script being detected
@@ -95,6 +96,8 @@ class BWP_Enqueued_Detector
 		$log_data = array(
 			'handle'   => $handle,
 			'src'      => $item['src'],
+			'min'      => $item['min'],
+			'wp'       => $item['wp'],
 			'depend'   => $item['depend'],
 			'position' => $this->_get_position($item),
 			'order'    => $this->_get_position_order($item),
@@ -110,7 +113,8 @@ class BWP_Enqueued_Detector
 	 *
 	 * This function is called whenever a style is being added to a Minify
 	 * Group and it will get necessary data to store in the detector's log.
-	 * Stored data include: `handle`, `url (processed src)`, `dependencies`,
+	 * Stored data include: `handle`, `url (processed src)`, `min` (minify or
+	 * ignore), `wp` (let WordPress handles or not), `dependencies`,
 	 * `position`, `media type`, `group`
 	 *
 	 * @param $handle string handle of the style being detected
@@ -126,6 +130,8 @@ class BWP_Enqueued_Detector
 		$log_data = array(
 			'handle'   => $handle,
 			'src'      => $item['src'],
+			'min'      => $item['min'],
+			'wp'       => $item['wp'],
 			'depend'   => $item['depend'],
 			'position' => $this->_get_position($item),
 			'order'    => $this->_get_position_order($item),
@@ -272,7 +278,7 @@ class BWP_Enqueued_Detector
 	 * accordingly.
 	 *
 	 * @param $type string type of group either 'script' or 'style'
-	 * @param $group_handle string the moved group
+	 * @param $group_handle string the moved group's handle
 	 * @param $new_position string new position of the moved group
 	 * @return void
 	 */
