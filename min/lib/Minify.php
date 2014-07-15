@@ -62,6 +62,13 @@ class Minify {
      */
     public static $isDocRootSet = false;
 
+	/**
+	 * Holds the cacheId passed via BWP Minify
+	 *
+	 * @var string
+	 */
+	public static $cacheId;
+
     /**
      * Specify a cache object (with identical interface as Minify_Cache_File) or
      * a path to use with Minify_Cache_File.
@@ -551,7 +558,12 @@ class Minify {
         }
         return $content;
     }
-    
+
+    public static function setCacheId($cacheId)
+    {
+        self::$cacheId = $cacheId;
+    }
+
     /**
      * Make a unique cache id for for this request.
      * 
@@ -563,6 +575,27 @@ class Minify {
      */
     protected static function _getCacheId($prefix = 'minify')
     {
+        // BEGIN BWP Minify Customization
+        if (!empty(self::$cacheId))
+            return self::$cacheId;
+        // switch cache path and create new directory if needed, this is for
+        // multisite compatible, this is reserved for future version
+        if (!empty($blog_id) && 1 == 2)
+        {
+            global $min_cacheFileLocking, $min_cachePath;
+            $blog_dir = str_pad($blog_id, 4, '0', STR_PAD_LEFT);
+            $cache_dir = $min_cachePath . '/' . $blog_dir;
+            // only switch to blog cache dir if it has been set, if not we
+            // let Minify handle the cache dir
+            if (!empty($min_cachePath))
+            {
+                if (!file_exists($cache_dir))
+                    mkdir($cache_dir, 0755);
+                self::setCache($cache_dir, $min_cacheFileLocking);
+            }
+        }
+        // END BWP Minify Customization
+
         $name = preg_replace('/[^a-zA-Z0-9\\.=_,]/', '', self::$_controller->selectionId);
         $name = preg_replace('/\\.+/', '.', $name);
         $name = substr($name, 0, 100 - 34 - strlen($prefix));

@@ -1,0 +1,70 @@
+.bwp-minify-table-wrapper {
+	position: relative;
+	float: left;
+	width: 65%;
+	background-color: #ffffff;
+	border: 1px solid #cccccc;
+	/* padding: 5px; */
+	margin-right: 10px;
+	overflow-x: hidden;
+}
+.bwp-minify-table-scroller {
+	height: 300px;
+	overflow: auto;
+	margin-top: 30px;
+	border-top: 1px solid #e5e5e5;
+	padding: 0 5px;
+}
+.bwp-minify-detector-table th {
+	min-width: 50px;
+}
+.bwp-minify-detector-table th .bwp-text {
+	position: absolute;
+	height: 30px;
+	top: 7px;
+	z-index: 2;
+}
+.bwp-minify-detector-table tr {
+	/* position: relative; */
+}
+.bwp-minify-detector-table td, .bwp-minify-detector-table th {
+	padding: 2px 5px;
+	text-align: left;
+}
+.bwp-minify-detector-table td {
+	padding: 4px 5px;
+}
+.bwp-minify-detector-table td input, .bwp-minify-detector-table td input:focus {
+	width: 300px;
+	border: none;
+	background: none;
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+	font-size: 13px;
+}
+.bwp-minify-detector-table .action-handles, .bwp-minify-detector-table .data-handle {
+	display: none;
+}
+.bwp-minify-detector-table .action-handles {
+	position: absolute;
+	background-color: #ffffff;
+	padding: 5px 10px;
+	/* border: 1px dashed #cccccc; */
+	right: 0px;
+	top: 0px;
+	z-index: 3;
+}
+.bwp-sidebar {
+	width: auto;
+	overflow: auto;
+}
+.bwp-sidebar textarea {
+	width: 90%;
+	margin-top: 10px;
+	display: none;
+}
+.bwp-sidebar .bwp-sign {
+	font-weight: bold;
+	font-size: 1.1em;
+}

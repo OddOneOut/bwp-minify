@@ -1,0 +1,341 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: BWP Minify\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-10-27 14:39+0700\n"
+"PO-Revision-Date: 2014-06-02 17:51+0700\n"
+"Last-Translator: Khang Minh <contact@betterwp.net>\n"
+"Language-Team: Nasrulhaq Muiz <nasroel@al-badar.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Generator: Poedit 1.6.4\n"
+"Language: id_ID\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: includes/class-bwp-framework.php:178
+#, php-format
+msgid ""
+"%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</"
+"strong> or higher. The plugin will not function until you update your "
+"software. Please deactivate this plugin."
+msgstr ""
+"%s membutuhkan WordPress <strong>%s</strong> atau lebih tinggi dan PHP "
+"<strong>%s</strong> atau lebih tinggi. Plugin tidak akan berfungsi hingga "
+"anda memperbarui perangkat lunak. Harap Non Aktifkan plugin ini."
+
+#: includes/class-bwp-framework.php:190
+msgid "Development Log"
+msgstr "Log Pengembangan"
+
+#: includes/class-bwp-framework.php:190
+msgid "Frequently Asked Questions"
+msgstr "Pertanyaan Yang Sering Diajukan"
+
+#: includes/class-bwp-framework.php:190
+msgid "FAQ"
+msgstr "FAQ"
+
+#: includes/class-bwp-framework.php:190
+msgid "Got a problem? Send me a feedback!"
+msgstr "Mendapat masalah? Kirimkan umpan balik!"
+
+#: includes/class-bwp-framework.php:190
+msgid "Contact"
+msgstr "Kontak"
+
+#: includes/class-bwp-framework.php:197
+msgid ""
+"You can buy me some special coffees if you appreciate my work, thank you!"
+msgstr ""
+"Anda dapat membelikan saya kopi jika anda mengapresiasi pekerjaanku, "
+"terimakasih!"
+
+#: includes/class-bwp-framework.php:211
+msgid "Donate to "
+msgstr "Donasi ke"
+
+#: includes/class-bwp-framework.php:213
+msgid "One cup $5.00"
+msgstr "Satu gelas $5.00"
+
+#: includes/class-bwp-framework.php:214
+msgid "Two cups $10.00"
+msgstr "Dua gelas $10.00"
+
+#: includes/class-bwp-framework.php:215
+msgid "Five cups! $25.00"
+msgstr "Lima gelas! $25.00"
+
+#: includes/class-bwp-framework.php:216
+msgid "One LL-cup!!! $50.00"
+msgstr "1 Dobel L gelas!$50.00"
+
+#: includes/class-bwp-framework.php:217
+msgid "... or any amount!"
+msgstr "... atau berapapun!"
+
+#: includes/class-bwp-framework.php:232
+msgid "Latest updates from BetterWP.net!"
+msgstr "Pembaruan terakhir dari BetterWP.net!"
+
+#: includes/class-bwp-framework.php:233
+msgid "Follow me on Twitter!"
+msgstr "Follow saya di Twitter!"
+
+#: includes/class-bwp-framework.php:243
+msgid "This Plugin is Proudly Sponsored By"
+msgstr "Plugin ini dengan Bangga Didukung Oleh"
+
+#: includes/class-bwp-framework.php:260
+#, php-format
+msgid "You are using version %s!"
+msgstr "Anda menggunakan versi %s!"
+
+#: includes/class-bwp-framework.php:396
+msgid "Settings"
+msgstr "Pengaturan"
+
+#: includes/class-bwp-minify.php:109
+msgid "Better WordPress Minify Settings"
+msgstr "Pengaturan Better WordPress Minify"
+
+#: includes/class-bwp-minify.php:218
+msgid "Better WordPress Minify"
+msgstr "Better WordPress Minify"
+
+#: includes/class-bwp-minify.php:229
+msgid "You do not have sufficient permissions to access this page."
+msgstr "Anda tidak memiliki izin memadai mengakses halaman ini."
+
+#: includes/class-bwp-minify.php:245
+msgid "General Options"
+msgstr "Pilihan Umum"
+
+#: includes/class-bwp-minify.php:246
+msgid "Minify JS files automatically?"
+msgstr "Minify otomatis data JS ?"
+
+#: includes/class-bwp-minify.php:247
+msgid "Minify CSS files automatically?"
+msgstr "Minify otomatis data CSS ?"
+
+#: includes/class-bwp-minify.php:248
+msgid "Minify <code>bloginfo()</code> stylesheets?"
+msgstr "Kecilkan <code>bloginfo()</code> stylesheets?"
+
+#: includes/class-bwp-minify.php:249
+msgid "Minifying Options"
+msgstr "Pilihan Minify"
+
+#: includes/class-bwp-minify.php:250
+msgid "Minify URL (double-click to edit)"
+msgstr "Mengecilkan URL (double-klik untuk mengedit)"
+
+#: includes/class-bwp-minify.php:251
+msgid "Cache directory (double-click to edit)"
+msgstr "Direktori cache (double-klik untuk mengedit)"
+
+#: includes/class-bwp-minify.php:252
+msgid "One minify string will contain"
+msgstr "Satu string pengecilan akan berisi"
+
+#: includes/class-bwp-minify.php:253
+msgid "Append the minify string with"
+msgstr "Menambahkan string pengecilan dengan"
+
+#: includes/class-bwp-minify.php:254
+msgid "Minifying Scripts Options"
+msgstr "Pilihan Skrip Pengecilan"
+
+#: includes/class-bwp-minify.php:255
+msgid "Scripts to be minified in header"
+msgstr "Script yang akan minified dalam header"
+
+#: includes/class-bwp-minify.php:256
+msgid "Scripts to be minified in footer"
+msgstr "Skrip yang akan di minified di footer"
+
+#: includes/class-bwp-minify.php:257
+msgid "Scripts to be minified and then printed separately"
+msgstr "Skrip yang akan minified dan kemudian dicetak secara terpisah"
+
+#: includes/class-bwp-minify.php:258
+msgid "Scripts to be ignored (not minified)"
+msgstr "Skrip untuk diabaikan (tidak minified)"
+
+#: includes/class-bwp-minify.php:263
+msgid "<em>Options that affect both your stylesheets and scripts.</em>"
+msgstr "<em>Opsi yang mempengaruhi stylesheet dan skrip anda</em>"
+
+#: includes/class-bwp-minify.php:264
+#, php-format
+msgid ""
+"<em>You can force the position of each script using those inputs below (e.g. "
+"you have a script registered in the header but you want to minify it in the "
+"footer instead). If you are still unsure, please read more <a href="
+"\"%s#positioning-your-scripts\">here</a>. Type in one script handle "
+"(<strong>NOT filename</strong>) per line.</em>"
+msgstr ""
+"<em>Anda dapat memaksa posisi setiap script menggunakan input tersebut di "
+"bawah ini (misalnya Anda memiliki script yang terdaftar di header tetapi "
+"Anda ingin mengecilkan di footer sebagai gantinya). Jika Anda masih ragu, "
+"silakan baca lebih lanjut <a href=\"%s#positioning-your-scripts\">di sini</ "
+"a>. Ketik satu pegangan naskah (<strong>TIDAK nama file</strong>) per baris."
+"</Em>"
+
+#: includes/class-bwp-minify.php:268
+msgid "second(s)"
+msgstr "detik"
+
+#: includes/class-bwp-minify.php:269
+msgid "minute(s)"
+msgstr "menit"
+
+#: includes/class-bwp-minify.php:270
+msgid "hour(s)"
+msgstr "jam"
+
+#: includes/class-bwp-minify.php:271
+msgid "day(s)"
+msgstr "hari"
+
+#: includes/class-bwp-minify.php:274
+msgid "Do not append anything"
+msgstr "Jangan menambahkan apa-apa"
+
+#: includes/class-bwp-minify.php:275
+msgid "Cache folder&#8217;s last modified time"
+msgstr "Folder cache&#8217;s waktu terakhir dimodifikasi"
+
+#: includes/class-bwp-minify.php:276
+msgid "Your WordPress&#8217;s current version"
+msgstr "Versi WordPress&#8217;s anda saat ini"
+
+#: includes/class-bwp-minify.php:277
+msgid "Your theme&#8217;s current version"
+msgstr "Versi theme&#8217;s anda saat ini"
+
+#: includes/class-bwp-minify.php:278
+msgid "A custom number"
+msgstr "Sejumlah kustom"
+
+#: includes/class-bwp-minify.php:282 includes/class-bwp-minify.php:283
+msgid ""
+"you can still use <code>bwp_minify()</code> helper function if you disable "
+"this."
+msgstr ""
+"Anda masih dapat menggunakan <code>bwp_minify()</code> fungsi pembantu jika "
+"Anda menonaktifkan ini."
+
+#: includes/class-bwp-minify.php:284
+msgid ""
+"most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main "
+"stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to "
+"add it to the main minify string. If you want to minify <code>style.css</"
+"code> with the rest of your css files, you must enqueue it."
+msgstr ""
+"kebanyakan tema (misalnya Twenty Ten) menggunakan <code>bloginfo()</code> "
+"untuk mencetak stylesheet utama (yaitu <code>style.css</code>) dan BWP "
+"Minify tidak akan dapat menambahkannya ke String pengecilan utama . Jika "
+"Anda ingin mengecilkan <code>style.css </code> dengan sisa file css Anda, "
+"Anda harus enqueue itu."
+
+#: includes/class-bwp-minify.php:287
+#, php-format
+msgid ""
+"This should be set automatically. If you think the URL is too long, please "
+"read <a href=\"%s#customization\">here</a> to know how to properly modify "
+"this."
+msgstr ""
+"Seharusnya diset otomatis, Jika anda berpikir URL terlalu panjang, harap "
+"baca <a href=\"%s#customization\">disini</a>untuk mengetahui bagaimana "
+"memodifikasi dengan baik."
+
+#: includes/class-bwp-minify.php:288
+#, php-format
+msgid ""
+"<strong>Important</strong>: Changing cache directory is a two-step process, "
+"which is described in details <a href=\"%s#advanced_customization\" target="
+"\"_blank\">here</a>. Please note that cache directory must be writable (i.e. "
+"CHMOD to 755 or 777)."
+msgstr ""
+"<strong>Penting</strong>: Merubah direktori cache itu dalam dua tahap, yang "
+"telah dijelaskan secara rinci <a href=\"%s#advanced_customization\" target="
+"\"_blank\">disini</a>. Harap dicatat bahwa direktori cache harus dapat "
+"ditulis (mis CHMOD ke 755 atau 777)."
+
+#: includes/class-bwp-minify.php:289
+msgid "file(s) at most."
+msgstr "file paling banyak."
+
+#: includes/class-bwp-minify.php:290
+msgid "&mdash;"
+msgstr "&mdash;"
+
+#: includes/class-bwp-minify.php:291
+msgid "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+msgstr "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+
+#: includes/class-bwp-minify.php:301
+msgid ""
+"<em><strong>Note:</strong> When you append one of the things above you are "
+"basically telling browsers to clear their cached version of your CSS and JS "
+"files, which is very useful when you change source files. Use this feature "
+"wisely :).</em>"
+msgstr ""
+"<em><strong>Catatan:</strong> Ketika Anda menambahkan salah satu hal di atas "
+"pada dasarnya Anda memberitahu browser untuk menghapus versi  cache CSS dan "
+"file JS anda,  yang sangat berguna ketika Anda mengubah file sumber. Gunakan "
+"fitur ini dengan bijak :).</em>"
+
+#: includes/class-bwp-minify.php:308
+msgid "Flush the cache"
+msgstr "Sirap cache"
+
+#: includes/class-bwp-minify.php:328 includes/class-bwp-minify.php:330
+msgid "Notice"
+msgstr "Maklumat"
+
+#: includes/class-bwp-minify.php:328
+#, php-format
+msgid "<strong>%d</strong> cached files have been deleted successfully!"
+msgstr "<strong>%d</strong> file cache berhasil dihapus!"
+
+#: includes/class-bwp-minify.php:330
+msgid ""
+"Could not delete any cached files. Please manually check the cache directory."
+msgstr ""
+"Tidak dapat menghapus data cache apapun. Harap periksa secara manual "
+"didirektori cache."
+
+#: includes/class-bwp-minify.php:364
+msgid "All options have been saved."
+msgstr "Semua pilihan telah disimpan"
+
+#: includes/class-bwp-minify.php:380
+msgid "Warning"
+msgstr "Peringatan"
+
+#: includes/class-bwp-minify.php:380
+msgid ""
+"Cache directory does not exist or is not writable. Please try CHMOD your "
+"cache directory to 755. If you still see this warning, CHMOD to 777."
+msgstr ""
+"Direktori cache  tidak ada atau tidak dapat ditulis. Coba CHMOD direktori "
+"cache anda ke 755. Jika masih melihat peringatan ini, CHMOD ke 777."
+
+#: includes/class-bwp-minify.php:502
+msgid "empty"
+msgstr "kosong"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:80
+msgid "Plugin Configurations"
+msgstr "Konfigurasi Plugin"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:398
+msgid "Save Changes"
+msgstr "Simpan Perubahan"

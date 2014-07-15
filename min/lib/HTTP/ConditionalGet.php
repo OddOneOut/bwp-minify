@@ -275,8 +275,10 @@ class HTTP_ConditionalGet {
      */
     protected function _setEtag($hash, $scope)
     {
-        $this->_etag = '"' . substr($scope, 0, 3) . $hash . '"';
-        $this->_headers['ETag'] = $this->_etag;
+        /* BWP Minify - do not use ETag */
+        /* $this->_etag = '"' . substr($scope, 0, 3) . $hash . '"'; */
+        /* $this->_headers['ETag'] = $this->_etag; */
+        $this->_etag = '';
     }
 
     /**
