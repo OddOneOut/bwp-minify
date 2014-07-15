@@ -1,68 +1,74 @@
 === Better WordPress Minify ===
 Contributors: OddOneOut
 Donate link: http://betterwp.net/wordpress-plugins/bwp-minify/
-Tags: CSS, javascript, JS, minify, minification, optimization, optimize
-Requires at least: 2.8
-Tested up to: 3.7
-Stable tag: 1.2.3
+Tags: minify, minify js, minify css, minify javascript, minify stylesheet, minification, optimization, optimize, stylesheet, css, javascript, js
+Requires at least: 3.0
+Tested up to: 3.9
+Stable tag: 1.3.0
+License: GPLv3 or later
 
-Allows you to minify your CSS and JS files for faster page loading for visitors.
+Allows you to combine and minify your CSS and JS files to improve page load time.
 
 == Description ==
 
-**BWP MINIFY IS WORDPRESS 3.7 COMPATIBLE**
+Allows you to combine and minify your CSS and JS files to improve page load time. This plugin uses the PHP library [Minify](http://code.google.com/p/minify/) and relies on WordPress's enqueueing system rather than the output buffer, which respects the order of CSS and JS files as well as their dependencies. BWP Minify is very customizable and easy to use.
 
-Allows you to minify your CSS and JS files for faster page loading for visitors. This plugin uses the PHP library [Minify](http://code.google.com/p/minify/) and relies on WordPress's enqueueing system rather than the output buffer (will not break your website in most cases). This plugin is very customizable and easy to use.
+**Useful resources to help you get started and make the most out of BWP Minify**
+
+* [Official Documentation](http://betterwp.net/wordpress-plugins/bwp-minify/#usage)
+* [WordPress Minify Best Practices](http://betterwp.net/wordpress-minify-javascript-css/)
 
 **Some Features**
 
-* Uses the enqueueing system of WordPress which improves compatibility with other plugins and themes
-* Allows you to customize all minify strings
-* Allows you to change various Minify configuration options by editing the config file directly
-* Offers various way to add a cache buster to your minify string
-* Gives you total control over how this plugin minifies your scripts
+* Uses enqueueing system of WordPress which improves compatibility with other plugins and themes
+* Allows you to move enqueued files to desired locations (header, footer, oblivion, etc.) via a dedicated management page
+* Allows you to change various Minify settings (cache directory, cache age, debug mode, etc.) directly in admin
+* Allows you to use friendly Minify urls, such as `http://example.com/path/to/cache/somestring.js`
+* Allows you to use CDN for minified contents, one CDN host for JS and one for CSS with SSL support
+* Allows you to split long Minify strings into shorter ones
+* Offers various way to add a cache buster to your minify string such as WordPress's version, Theme's version, Cache folder's last modified timestap, etc.
 * Supports script localization (`wp_localize_script()`)
+* Supports inline styles
 * Supports RTL stylesheets
 * Supports media-specific stylesheets (e.g. 'screen', 'print', etc.)
 * Supports conditional stylesheets (e.g. `<!--[if lt IE 7]>`)
 * Provides hooks for further customization
 * WordPress Multi-site compatible
 
-**Major Features that are scheduled for 1.3.0**
+Please don't forget to rate this plugin [5 shining stars](http://wordpress.org/support/view/plugin-reviews/bwp-minify?filter=5) if you like it, thanks!
 
-* Automatic script/style handle detection: you will no longer have to look for script/style handles, all will be put in a convenient dropdown box for you to choose!
-* Friendly Minify URL: no more question mark!
-* Role-based Minification: If you're an admin and would like to debug your scripts, this option is definitely useful!
+**Get in touch**
 
-**Important Notes**
-
-If you want to make the most out of BWP Minify, it is highly recommended that you give this [BWP Minify Advanced Customizations](http://betterwp.net/wordpress-plugins/bwp-minify/#advanced_customization) guide a read!
+* Support is provided via [BetterWP.net Community](http://betterwp.net/community/).
+* Follow and contribute to development via [Github](https://github.com/OddOneOut/Better-WordPress-Minify).
+* You can also follow me on [Twitter](http://twitter.com/0dd0ne0ut).
+* Check out [latest WordPress Tips and Ideas](http://feeds.feedburner.com/BetterWPnet) from BetterWP.net.
 
 **Languages**
 
 * English (default)
 * Romanian (ro_RO) - Thanks to [Luke Tyler, International Calling Cards](www.enjoyprepaid.com)!
 * Turkish (tr_TR) - Thanks to Hakan E
-* French (fr_FR) - Thanks to Sebastien 
+* French (fr_FR) - Thanks to Sebastien
 * Italian (it_IT) - Thanks to Gabriele - http://cookspot.it
 * Spanish (es_ES) -  Thanks to Ruben Hernandez - http://usitility.com/
 * Dutch (nl_NL) - Thanks to Martijn van Egmond
 * German (de_DE) - Thanks to Matthias
+* Serbo-Croatian (sr_RS) - Thanks to Borisa Djuraskovic - [Web Hosting Hub](http://www.webhostinghub.com/)
+* Indonesian (id_ID) - Thanks to Nasrulhaq Muiz - http://al-badar.net
+* Russian (ru_RU) - Thanks to Эдуард Валеев
 
 Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using-poedit/) this plugin!
-
-**Get in touch**
-
-* I'm available at [BetterWP.net](http://betterwp.net) and you can also follow me on [Twitter](http://twitter.com/0dd0ne0ut).
-* Check out [latest WordPress Tips and Ideas](http://feeds.feedburner.com/BetterWPnet) from BetterWP.net.
 
 == Installation ==
 
 1. Upload the `bwp-minify` folder to the `/wp-content/plugins/` directory
-2. Activate the plugin through the Plugins menu in WordPress. After activation, you should see a menu of this plugin under Settings.
-3. Configure the plugin, optionally choose a minify URL (ony recommended if you are experienced with URL and server paths), and modify Minify's `config.php` as you please. Please read [here](http://betterwp.net/wordpress-plugins/bwp-minify/#advanced_customization) for more information.
-4. Make sure the `cache` folder is writable, by `CHMOD` it to either `755` or `777`, depending on which one will work for you.
-5. Enjoy!
+2. Activate the plugin through the Plugins menu in WordPress. After activation, you should see three menus of this plugin on your left.
+3. Configure the plugin.
+4. Make sure the `cache` folder is writable, by `CHMOD` it to either `755` or `777`, depending on which one works for you.
+5. For Advanced Configuration, take a look at [BWP Minify Advanced Usage](http://betterwp.net/wordpress-plugins/bwp-minify/#advanced_usage).
+
+**Enjoy!**
 
 == Frequently Asked Questions ==
 
@@ -70,9 +76,51 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 
 == Screenshots ==
 
-1. Changing the Minify URL, now one can have a shorter and nicer URL ;)
+1. Basic Functionality
+2. Advanced Settings
+3. Enqueued files management
+4. Minify in action!
 
 == Changelog ==
+
+= 1.3.0 =
+* **New Features**
+    * Added support for Friendly Minify strings, e.g. `http://example.com/path/to/script.js` (best used with CDN). This feature should work well on **nginx** server.
+    * Provides a much better method to capture and print JS, CSS files.
+    * Dependencies are more intelligently handled. This should fix many incompatibility issues with other plugins. **Note**: users of **Leaflet Map Markers** plugin will still need to add `leafletmapsmarker` handle to `Script to be ignored (not minified)`.
+    * Provides full support for conditional and alternate CSS files.
+    * Auto-detects CSS, JS files used on site. Added a new admin page to easily add CSS, JS files to desired positions.
+    * Added a new position called `oblivion`, admin can put CSS, JS files to this position to remove them completely from the site, this is useful when you want to remove duplicate files.
+    * You can now control Minify Library's settings via `wp-admin` setting page.
+    * Basic CDN support with SSL.
+* **Bugs fixed**
+    * Fixed issues with certain installations where WordPress is installed into a sub-directory or `wp-content` folder is moved.
+    * Fixed incompatibility issues with protocol-relative URLs.
+    * Fixed possible incompatibility issues with forced-SSL URLs.
+    * Other minor fixes.
+* **Enhancements**
+    * BWP Minify is WordPress 3.9 compatible.
+    * BWP Minify should now be able to handle **very late** JS, CSS files that are queued/printed directly using `wp_print_scripts` and `wp_print_styles`.
+    * Changed Minify URL setting to contain a relative URL (from site root) instead of an absolute URL. This should be useful when switching between staging and live site, or between mirror sites.
+    * Changed Minify strings' default length to `10` to avoid errors on certain servers. Users are encouraged to increase/decrease the length when needed, or enable Pretty Minify String instead.
+    * Disable `Minify bloginfo()` setting by default. Modern themes should always use the enqueue system for any stylesheet.
+    * `admin-bar`, `jquery-core`, and `jquery-migrate` are now ignored by default.
+    * `admin-bar` and `dashicon` are now ignored by default 
+	* Changed default cache age to 1 day instead of 2 hours.
+    * Other minor enhancements.
+* **Misc**
+    * Added a Serbo-Croatian translation - Thanks to Borisa Djuraskovic!
+    * Added an Indonesian translation - Thanks to Nasrulhaq Muiz!
+    * Added a Russian translation - Thanks to Эдуард Валеев!
+
+**Migration from 1.2.x**
+
+* Minify URL setting has been replaced with Minify Path setting and you will have to manually update this setting if you're using a non-default one. **Note to Developers**: the setting's key has been changed from `input_minurl` to `input_minpath`. The hook `bwp_minify_min_dir` is still available but deprecated in favor of `bwp_minify_min_path`
+* Minify Path setting and Cache Directory setting are now default to empty value, which means they're automatically detected.
+
+Enjoy this release, and please don't forget to [rate BWP Minify](http://wordpress.org/support/view/plugin-reviews/bwp-minify?filter=5) **5 shining stars** if you like it, thanks!
+
+**Bonus**: Check out these [Minifying Best Practices](http://betterwp.net/wordpress-minify-javascript-css/) to apply to your site today!
 
 = 1.2.3 =
 * BWP Minify is now WordPress 3.7 compatible (compatibility issues with WordPress 3.5 and 3.6 have been fixed).
@@ -85,7 +133,7 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 * Added a German translation - Thanks to Matthias!
 * Disabled BWP Minify on Ajax Edit Comment plugin's pages (for now).
 * Disabled BWP Minify on SimplePress forum page.
-* Updated BWP Framework to fix a possible bug that caues BWP setting pages to go blank.
+* Updated BWP Framework to fix a possible bug that causes BWP setting pages to go blank.
 * Fixed a bug that makes BWP Minify fails to split long minify string into shorter ones.
 * **Good news**: I have created [an official Github repository for BWP Minify](https://github.com/OddOneOut/Better-WordPress-Minify), awaiting coders worldwide.
 * **Good news**: ManageWP.com has become the official sponsor for BWP Minify - [Read more](http://betterwp.net/319-better-wordpress-plugins-updates-2013/).
@@ -152,7 +200,7 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 **Enjoy BWP Minify!**
 
 = 1.0.5 =
-* Added support for theme developers who would like to integreate BWP Minify into their themes 
+* Added support for theme developers who would like to integreate BWP Minify into their themes
 	* Added a new hook added for `min` path.
 	* Added new hooks to allow theme developers to only minify certain media files (see [this section](http://betterwp.net/wordpress-plugins/bwp-minify/#allowed-handles) for more details).
 	* Some bug fixes.

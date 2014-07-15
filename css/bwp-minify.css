@@ -25,7 +25,7 @@
 	z-index: 2;
 }
 .bwp-minify-detector-table tr {
-	position: relative;
+	/* position: relative; */
 }
 .bwp-minify-detector-table td, .bwp-minify-detector-table th {
 	padding: 2px 5px;

@@ -1,0 +1,377 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Better WordPress Minify v1.2.3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-03-20 21:51+0700\n"
+"PO-Revision-Date: 2014-03-25 15:39:59+0000\n"
+"Last-Translator: adward <adward@chelny.com>\n"
+"Language-Team: adward <adward@chelny.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%100/10==1 ? 2 : n%10==1 ? 0 : (n+9)%10>3 ? 2 : 1;\n"
+"X-Generator: CSL v1.x\n"
+"X-Poedit-Language: Russian\n"
+"X-Poedit-Country: RUSSIA\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-Bookmarks: \n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Textdomain-Support: yes"
+
+#: includes/class-bwp-framework.php:178
+#, php-format
+#@ bwp-minify
+msgid "%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</strong> or higher. The plugin will not function until you update your software. Please deactivate this plugin."
+msgstr "%s требуется WordPress версии <strong>%s</strong> или выше и PHP <strong>%s</strong> или выше. Плагин не будет работать, пока вы не обновите программное обеспечение. Настаиваем на деактивации этого плагина."
+
+#: includes/class-bwp-framework.php:190
+#@ bwp-minify
+msgid "Development Log"
+msgstr "Дневник разработки"
+
+#: includes/class-bwp-framework.php:190
+#@ bwp-minify
+msgid "Frequently Asked Questions"
+msgstr "Часто задаваемые вопросы"
+
+#: includes/class-bwp-framework.php:190
+#@ bwp-minify
+msgid "FAQ"
+msgstr ""
+
+#: includes/class-bwp-framework.php:190
+#@ bwp-minify
+msgid "Got a problem? Send me a feedback!"
+msgstr "Столкнулись с проблемой? Отправьте мне запрос!"
+
+#: includes/class-bwp-framework.php:190
+#@ bwp-minify
+msgid "Contact"
+msgstr "Контакт"
+
+#: includes/class-bwp-framework.php:197
+#@ bwp-minify
+msgid "You can buy me some special coffees if you appreciate my work, thank you!"
+msgstr "Пожертвуйте на чай, если Вам понравилась моя работа ;) "
+
+#: includes/class-bwp-framework.php:213
+#@ bwp-minify
+msgid "One cup $5.00"
+msgstr "Чашка чая  за 5 баксов"
+
+#: includes/class-bwp-framework.php:214
+#@ bwp-minify
+msgid "Two cups $10.00"
+msgstr "Кружку чая за 10 баксов"
+
+#: includes/class-bwp-framework.php:215
+#@ bwp-minify
+msgid "Five cups! $25.00"
+msgstr "Литровую кружку за 25 баксов"
+
+#: includes/class-bwp-framework.php:216
+#@ bwp-minify
+msgid "One LL-cup!!! $50.00"
+msgstr "Бидон чая за 50 баксов"
+
+#: includes/class-bwp-framework.php:217
+#@ bwp-minify
+msgid "... or any amount!"
+msgstr "...или сколько не жалко!"
+
+#: includes/class-bwp-framework.php:232
+#@ bwp-minify
+msgid "Latest updates from BetterWP.net!"
+msgstr "Свежие обновления на сайте BetterWP.net!"
+
+#: includes/class-bwp-framework.php:233
+#@ bwp-minify
+msgid "Follow me on Twitter!"
+msgstr "Фоловим в Твиттере!"
+
+#: includes/class-bwp-framework.php:260
+#, php-format
+#@ bwp-minify
+msgid "You are using version %s!"
+msgstr "Вы юзаете версию %s!"
+
+#: includes/class-bwp-framework.php:396
+#@ default
+msgid "Settings"
+msgstr "Настройки"
+
+#: includes/class-bwp-minify.php:109
+#@ bwp-minify
+msgid "Better WordPress Minify Settings"
+msgstr "Настройки плагина Better Minify"
+
+#. translators: plugin header field 'Name'
+#: bwp-minify.php:0
+#: includes/class-bwp-minify.php:219
+#@ bwp-minify
+msgid "Better WordPress Minify"
+msgstr "Better WordPress Minify"
+
+#: includes/class-bwp-minify.php:230
+#@ default
+msgid "You do not have sufficient permissions to access this page."
+msgstr "Вы не имеете достаточно прав для доступа к этой странице."
+
+#: includes/class-bwp-minify.php:246
+#@ bwp-minify
+msgid "General Options"
+msgstr "Главные настройки"
+
+#: includes/class-bwp-minify.php:247
+#@ bwp-minify
+msgid "Minify JS files automatically?"
+msgstr "Минимизировать JS-файлы скриптов автоматически?"
+
+#: includes/class-bwp-minify.php:248
+#@ bwp-minify
+msgid "Minify CSS files automatically?"
+msgstr "Минимизировать CSS-файлы стилей автоматически? "
+
+#: includes/class-bwp-minify.php:249
+#@ bwp-minify
+msgid "Minify <code>bloginfo()</code> stylesheets?"
+msgstr "Минимизировать <code>bloginfo()</code> стили?"
+
+#: includes/class-bwp-minify.php:250
+#@ bwp-minify
+msgid "Minifying Options"
+msgstr "Опции Minifying "
+
+#: includes/class-bwp-minify.php:251
+#@ bwp-minify
+msgid "Minify URL (double-click to edit)"
+msgstr "Путь до минимизированных файлов  (дваждыклик для редактирования)"
+
+#: includes/class-bwp-minify.php:252
+#@ bwp-minify
+msgid "Cache directory (double-click to edit)"
+msgstr "Папка кэша <br>(дваждыклик для редактирования)"
+
+#: includes/class-bwp-minify.php:253
+#@ bwp-minify
+msgid "One minify string will contain"
+msgstr "Одна минимизированная строка будет содержать"
+
+#: includes/class-bwp-minify.php:254
+#@ bwp-minify
+msgid "Append the minify string with"
+msgstr "Что добавить в минимизированную строку?"
+
+#: includes/class-bwp-minify.php:255
+#@ bwp-minify
+msgid "Minifying Scripts Options"
+msgstr "Настройки сжатия скриптов"
+
+#: includes/class-bwp-minify.php:256
+#@ bwp-minify
+msgid "Scripts to be minified in header"
+msgstr "Скрипты должны быть сжаты в заголовок"
+
+#: includes/class-bwp-minify.php:257
+#@ bwp-minify
+msgid "Scripts to be minified in footer"
+msgstr "Скрипты должны быть сжаты в подвал"
+
+#: includes/class-bwp-minify.php:258
+#@ bwp-minify
+msgid "Scripts to be minified and then printed separately"
+msgstr "Скрипты, которые должны быть сжаты, а следом выведены по отдельности"
+
+#: includes/class-bwp-minify.php:259
+#@ bwp-minify
+msgid "Scripts to be ignored (not minified)"
+msgstr "Игнорируемые скрипты (не будут модифицироваться)"
+
+#: includes/class-bwp-minify.php:264
+#@ bwp-minify
+msgid "<em>Options that affect both your stylesheets and scripts.</em>"
+msgstr "<em>Параментры, влияющие на каскадные стили и скрипты</em>"
+
+#: includes/class-bwp-minify.php:265
+#, php-format
+#@ bwp-minify
+msgid "<em>You can force the position of each script using those inputs below (e.g. you have a script registered in the header but you want to minify it in the footer instead). If you are still unsure, please read more <a href=\"%s#positioning-your-scripts\">here</a>. Type in one script handle (<strong>NOT filename</strong>) per line.</em>"
+msgstr "<em>Настраиваемые состояния для каждого отдельного сценария (например, у Вас есть скрипт, зарегистрированный в заголовке, а вы хотите выводить его в подвале). Если нет уверенности, ознакомьтесь с деталями  <a href=\"%s#positioning-your-scripts\">вот тут</a>. По одному сценарию (<strong>НЕ имя файла</strong>) на строку.</em>"
+
+#: includes/class-bwp-minify.php:269
+#@ bwp-minify
+msgid "second(s)"
+msgstr "секунд"
+
+#: includes/class-bwp-minify.php:270
+#@ bwp-minify
+msgid "minute(s)"
+msgstr "минут"
+
+#: includes/class-bwp-minify.php:271
+#@ bwp-minify
+msgid "hour(s)"
+msgstr "часов"
+
+#: includes/class-bwp-minify.php:272
+#@ bwp-minify
+msgid "day(s)"
+msgstr "дней"
+
+#: includes/class-bwp-minify.php:275
+#@ bwp-minify
+msgid "Do not append anything"
+msgstr "Ничего"
+
+#: includes/class-bwp-minify.php:276
+#@ bwp-minify
+msgid "Cache folder&#8217;s last modified time"
+msgstr "Последнее изменение папки кэша"
+
+#: includes/class-bwp-minify.php:277
+#@ bwp-minify
+msgid "Your WordPress&#8217;s current version"
+msgstr "Текущую версию WordPress"
+
+#: includes/class-bwp-minify.php:279
+#@ bwp-minify
+msgid "A custom number"
+msgstr "Свою цифру"
+
+#: includes/class-bwp-minify.php:283
+#: includes/class-bwp-minify.php:284
+#@ bwp-minify
+msgid "you can still use <code>bwp_minify()</code> helper function if you disable this."
+msgstr "<i>можно продолжать использовать функцию <code>bwp_minify()</code> даже при отключении этого параметра.</i>"
+
+#: includes/class-bwp-minify.php:285
+#@ bwp-minify
+msgid "most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it."
+msgstr "Большинство тем оформления (к примеру Twenty Ten) используют <code>bloginfo()</code> для вывода основных файлов  стилей(например <code>style.css</code>) и BWP Minify не в состоянии будет добавить такой стиль в сжатую строку. Если захотите уменьшить такой <code>style.css</code> - необходимо будет поставить его в очередь."
+
+#: includes/class-bwp-minify.php:288
+#, php-format
+#@ bwp-minify
+msgid "This should be set automatically. If you think the URL is too long, please read <a href=\"%s#customization\">here</a> to know how to properly modify this."
+msgstr "<br>Этот параметр устанавливается автоматически. Если Вы считаете, что URL чересчур длинный, почитайте <a href=\"%s#customization\">вот здесь</a> чтобы узнать, как правильно изменить это значение."
+
+#: includes/class-bwp-minify.php:290
+#@ bwp-minify
+msgid "file(s) at most."
+msgstr "файлов"
+
+#: includes/class-bwp-minify.php:291
+#@ bwp-minify
+msgid "&mdash;"
+msgstr "&mdash;"
+
+#: includes/class-bwp-minify.php:292
+#@ bwp-minify
+msgid "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
+msgstr ""
+
+#: includes/class-bwp-minify.php:302
+#@ bwp-minify
+msgid "<em><strong>Note:</strong> When you append one of the things above you are basically telling browsers to clear their cached version of your CSS and JS files, which is very useful when you change source files. Use this feature wisely :).</em>"
+msgstr "<em><strong>Имейте ввиду:</strong> Изменяя любой из вышеперечисленных параметров, тем самым, Вы так же сообщаете браузеру очистить закэшированные скрипты и стили, которые становятся к моменту сохранения бесполезными. Используйте эту фичу мудро ;) </em>"
+
+#: includes/class-bwp-minify.php:309
+#@ bwp-minify
+msgid "Flush the cache"
+msgstr "Очистить кэш"
+
+#: includes/class-bwp-minify.php:329
+#: includes/class-bwp-minify.php:331
+#@ bwp-minify
+msgid "Notice"
+msgstr "Уведомление"
+
+#: includes/class-bwp-minify.php:329
+#, php-format
+#@ bwp-minify
+msgid "<strong>%d</strong> cached files have been deleted successfully!"
+msgstr "<strong>%d</strong> успешно удалены кэшированные файлы!"
+
+#: includes/class-bwp-minify.php:331
+#@ bwp-minify
+msgid "Could not delete any cached files. Please manually check the cache directory."
+msgstr "Не удалось оистить все файлы из кэша. Пожалуйста, почистите файлы в папке кэша ручками."
+
+#: includes/class-bwp-minify.php:365
+#@ bwp-minify
+msgid "All options have been saved."
+msgstr "Все изменения успешно сохранены."
+
+#: includes/class-bwp-minify.php:381
+#@ default
+msgid "Warning"
+msgstr "Предупреждение"
+
+#: includes/class-bwp-minify.php:381
+#@ bwp-minify
+msgid "Cache directory does not exist or is not writable. Please try CHMOD your cache directory to 755. If you still see this warning, CHMOD to 777."
+msgstr "Папка кэша не доступна для записи. Пожалуйста, установите  CMOD разрешения на эту папку в 755. если это сообщение повторится - то в  777."
+
+#: includes/class-bwp-minify.php:503
+#@ bwp-minify
+msgid "empty"
+msgstr "пусто"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:80
+#@ bwp-option-page
+msgid "Plugin Configurations"
+msgstr "Конфигурация плагина"
+
+#: includes/bwp-option-page/includes/class-bwp-option-page.php:398
+#@ default
+msgid "Save Changes"
+msgstr "Сохранить изменения"
+
+#. translators: plugin header field 'PluginURI'
+#: bwp-minify.php:0
+#@ bwp-minify
+msgid "http://betterwp.net/wordpress-plugins/bwp-minify/"
+msgstr ""
+
+#. translators: plugin header field 'Description'
+#: bwp-minify.php:0
+#@ bwp-minify
+msgid "Allows you to minify your CSS and JS files for faster page loading for visitors. This plugin uses the PHP library <a href=\"http://code.google.com/p/minify/\">Minify</a> and relies on WordPress's enqueueing system rather than the output buffer (will not break your website in most cases). This plugin is very customizable and easy to use."
+msgstr "Позволяет уменьшать файлы стилей и скриптов (CSS и JS) файлы для уменьшения скорости загрузки страниц сайта. Плагин использует библиотеку PHP <a href=\"http://code.google.com/p/minify/\">Minify</ A> и полагается на стандартный механизм добавления скриптов  (enqueue script Wordpress), а не на выходной буфер (Ваш сайт не сломается в большинстве случаев). Решение весьма настраиваемое и достаточно просто в использовании."
+
+#. translators: plugin header field 'Author'
+#: bwp-minify.php:0
+#@ bwp-minify
+msgid "Khang Minh"
+msgstr ""
+
+#. translators: plugin header field 'AuthorURI'
+#: bwp-minify.php:0
+#@ bwp-minify
+msgid "http://betterwp.net"
+msgstr ""
+
+#. translators: plugin header field 'Version'
+#: bwp-minify.php:0
+#@ bwp-minify
+msgid "1.2.3"
+msgstr ""
+
+#: includes/class-bwp-framework.php:243
+#@ bwp-minify
+msgid "This Plugin is Proudly Sponsored By"
+msgstr "Спонсоры"
+
+#: includes/class-bwp-minify.php:278
+#@ bwp-minify
+msgid "Your theme&#8217;s current version"
+msgstr "Текущую версию выбранной темы оформления"
+
+#: includes/class-bwp-minify.php:289
+#, php-format
+#@ bwp-minify
+msgid "<strong>Important</strong>: Changing cache directory is a two-step process, which is described in details <a href=\"%s#advanced_customization\" target=\"_blank\">here</a>. Please note that cache directory must be writable (i.e. CHMOD to 755 or 777)."
+msgstr "<strong>Важно:</strong> Изменение папки хранения кэша - процесс двуэтапный и подробности в деталях изложены  <a href=\"%s#advanced_customization\" target=\"_blank\">здесь</a>. Обратите внимание на то, что каталог кэша должен быть доступен для записи (т.е. CHMOD 755 или 777)."
+

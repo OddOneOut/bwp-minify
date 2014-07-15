@@ -224,15 +224,18 @@ class BWP_Minify_Fetcher
 		// and detect this group as well so it can be served using friendly url
 		// next time
 		$detector_version = $this->_detector->get_version();
-		$group_hash = md5($original_string . $detector_version);
+		$group_hash       = md5($original_string . $detector_version);
+
 		if (false == $this->_is_group_detected($group_hash))
 		{
 			$group_type = 'js' == $ext ? 'script' : 'style';
+
 			$this->_detector->detect_group(
 				$group_handle,
 				$original_string,
 				$group_type
 			);
+
 			return $string;
 		}
 

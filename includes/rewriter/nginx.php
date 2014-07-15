@@ -54,10 +54,23 @@ class BWP_Minify_Rewriter_Nginx extends BWP_Minify_AbstractRewriter
 		$rules[] = 'if ($http_accept_encoding ~* gzip) {';
 		$rules[] = '    set $zip_ext ".gz";';
 		$rules[] = '}';
+		$rules[] = 'set $minify_static "";';
+		$rules[] = 'if ($http_cache_control = false) {';
+		$rules[] = '    set $minify_static "C";';
+		$rules[] = '    set $http_cache_control "";';
+		$rules[] = '}';
+		$rules[] = 'if ($http_cache_control !~* no-cache) {';
+		$rules[] = '    set $minify_static "C";';
+		$rules[] = '}';
+		$rules[] = 'if ($http_if_modified_since = false) {';
+		$rules[] = '    set $minify_static "${minify_static}M";';
+		$rules[] = '}';
 		$rules[] = 'if (-f $request_filename$zip_ext) {';
+		$rules[] = '    set $minify_static "${minify_static}E";';
+		$rules[] = '}';
+		$rules[] = 'if ($minify_static = CME) {';
 		$rules[] = '    rewrite (.*) $1$zip_ext break;';
 		$rules[] = '}';
-		$rules[] = 'if (!-e $request_filename) {';
 
 		// nginx rewrite rules and location directive do not match query
 		// variable so `/path/to/file.js` is the same as `/path/to/file.js?ver=1`
@@ -66,14 +79,14 @@ class BWP_Minify_Rewriter_Nginx extends BWP_Minify_AbstractRewriter
 		{
 			// special rewrite rules for sub-directory multisite environment
 			$blog_regex = '/[_0-9a-zA-Z-]+';
-			$rules[]    = '    rewrite ^' . $blog_regex . '(' . $fly_min_path
-				. 'minify-b(\d+)-([a-zA-Z0-9-_.]+)\.(css|js))$ $1;';
+			$rules[]    = 'rewrite ^' . $blog_regex . '(' . $fly_min_path
+				. 'minify-b\d+-[a-zA-Z0-9-_.]+\.(css|js))$ $1;';
 		}
 
-		$rules[] = '    rewrite ^' . $fly_min_path
+		$rules[] = 'rewrite ^' . $fly_min_path
 			. 'minify-b(\d+)-([a-zA-Z0-9-_.]+)\.(css|js)$ '
-			. $base . 'index.php?blog=$1&min_group=$2&min_type=$3;';
-		$rules[] = '}' . "\n";
+			. $base . 'index.php?blog=$1&min_group=$2&min_type=$3 last;';
+		$rules[] = "\n";
 
 		$rules   = $this->get_cache_response_headers() . implode("\n", $rules);
 		return $rules;

@@ -1,8 +1,37 @@
 /* For WordPress of older versions */
-.nav-tab{border-style:solid;border-color:#ccc #ccc #f9f9f9;border-width:1px 1px 0;color:#c1c1c1;text-shadow:rgba(255,255,255,1) 0 1px 0;font-size:12px;line-height:16px;display:inline-block;padding:4px 14px 6px;text-decoration:none;margin:0 6px -1px 0;-moz-border-radius:5px 5px 0 0;-webkit-border-top-left-radius:5px;-webkit-border-top-right-radius:5px;-khtml-border-top-left-radius:5px;-khtml-border-top-right-radius:5px;border-top-left-radius:5px;border-top-right-radius:5px;}.nav-tab-active{border-width:1px;color:#464646;}h2.nav-tab-wrapper,h3.nav-tab-wrapper{border-bottom:1px solid #ccc;padding-bottom:0;}h2 .nav-tab{padding:4px 20px 6px;font:italic normal normal 24px/35px Georgia,"Times New Roman","Bitstream Charter",Times,serif;}
+.nav-tab{
+    border-style:solid;
+    border-color:#ccc #ccc #f9f9f9;
+    border-width:1px 1px 0;
+    color:#c1c1c1;
+    text-shadow:rgba(255,255,255,1) 0 1px 0;
+    font-size:12px;
+    line-height:16px;
+    display:inline-block;
+    padding:4px 14px 6px;
+    text-decoration:none;
+    margin:0 3px -1px 0;
+    /* -moz-border-radius:5px 5px 0 0; */
+    /* -webkit-border-top-left-radius:5px; */
+    /* -webkit-border-top-right-radius:5px; */
+    /* -khtml-border-top-left-radius:5px; */
+    /* -khtml-border-top-right-radius:5px; */
+    /* border-top-left-radius:5px; */
+    /* border-top-right-radius:5px; */
+}
+.nav-tab-active{
+    border-width:1px;
+    border-bottom-color: transparent;
+    color: #000000;
+}
+h2.nav-tab-wrapper, h3.nav-tab-wrapper{
+    border-bottom:1px solid #ccc;
+    padding-bottom:0;
+}
+h2 .nav-tab{padding:6px 15px 6px;}
 
 .bwp-option-page {
-	margin-top: 1em;	
+	margin-top: 1em;
 }
 
 .bwp-option-page p {
@@ -30,12 +59,14 @@
 }
 
 .bwp-option-page-tabs a {
-	font-size: 19px;
+	font-size: 18px;
+    line-height: 24px;
+    font-style: italic;
 }
 
 .bwp-option-page-tabs a.version {
-	font-size: 17px;
-	line-height: 22px;
+	font-size: 14px;
+	line-height: 14px;
 }
 
 .bwp-opton-page-label {

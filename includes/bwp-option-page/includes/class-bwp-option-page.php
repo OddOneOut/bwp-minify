@@ -70,12 +70,13 @@ class BWP_OPTION_PAGE {
 	 */
 	function init($form = array(), $options = array(), $form_tabs = array())
 	{
-		$this->form_items 			= $form['items'];
-		$this->form_item_names 		= $form['item_names'];
-		$this->form_item_labels		= $form['item_labels'];
-		$this->form					= $form;
-		$this->form_options			= $options;
-		$this->form_tabs			= $form_tabs;
+		$this->form_items       = $form['items'];
+		$this->form_item_names  = $form['item_names'];
+		$this->form_item_labels = $form['item_labels'];
+		$this->form             = $form;
+		$this->form_options     = $options;
+		$this->form_tabs        = $form_tabs;
+
 		if (sizeof($this->form_tabs) == 0)
 			$this->form_tabs		= array(__('Plugin Configurations', 'bwp-option-page'));
 	}
@@ -278,18 +279,21 @@ class BWP_OPTION_PAGE {
 	 */
 	function generate_html_fields($type, $name)
 	{
-		$item_label = '';
+		$item_label  = '';
 		$return_html = '';
 
 		$item_key = array_keys($this->form_item_names, $name);
 
-		$input_class = ($type == 'heading') ? 'bwp-option-page-heading-desc' : 'bwp-option-page-inputs';
+		$input_class = $type == 'heading'
+			? 'bwp-option-page-heading-desc'
+			: 'bwp-option-page-inputs';
 
 		// An inline item can hold any HTML markup
 		// An example is to display some kinds of button right be low the label
 		$inline = '';
-		if (isset($this->form['inline']) && is_array($this->form['inline']) && array_key_exists($name, $this->form['inline']))
-		{
+		if (isset($this->form['inline']) && is_array($this->form['inline'])
+			&& array_key_exists($name, $this->form['inline'])
+		) {
 			$inline = (empty($this->form['inline'][$name])) ? '' : $this->form['inline'][$name];
 		}
 		$inline .= "\n";
@@ -317,29 +321,38 @@ class BWP_OPTION_PAGE {
 
 			default:
 
-				if (!isset($this->form[$type][$name]) || ($type != 'heading' && !is_array($this->form[$type][$name])))
-				return;
+				if (!isset($this->form[$type][$name])
+					|| ($type != 'heading' && !is_array($this->form[$type][$name]))
+				) {
+					return;
+				}
 
 				/*$item_label = (empty($this->form[$type][$name]['label'])) ? '<label class="bwp-opton-page-label" for="' . $name . '">' . $this->form_item_labels[$item_key[0]] . '</label>' : '<span class="bwp-opton-page-label">' . $this->form_item_labels[$item_key[0]] . '</span>';*/
-				$item_label = ($type != 'checkbox' && $type != 'radio') ? '<label class="bwp-opton-page-label" for="' . $name . '">' . $this->form_item_labels[$item_key[0]] . $inline . '</label>' : '<span class="bwp-opton-page-label type-' . $type . '">' . $this->form_item_labels[$item_key[0]] . $inline . '</span>';
-				$item_label = ($type == 'heading') ? '<h3>' . $this->form_item_labels[$item_key[0]] . '</h3>' . $inline : $item_label;
+				$item_label = $type != 'checkbox' && $type != 'radio'
+					? '<label class="bwp-opton-page-label" for="' . $name . '">' . $this->form_item_labels[$item_key[0]] . $inline . '</label>'
+					: '<span class="bwp-opton-page-label type-' . $type . '">' . $this->form_item_labels[$item_key[0]] . $inline . '</span>';
+
+				$item_label = $type == 'heading'
+					? '<h3>' . $this->form_item_labels[$item_key[0]] . '</h3>' . $inline
+					: $item_label;
 
 				if (isset($this->form[$type]))
-				{
 					$return_html = $this->generate_html_field($type, $this->form[$type][$name], $name);
-				}
 			break;
 		}
 
 		// A container can hold some result executed by customized script,
 		// such as displaying something when user press the submit button
 		$containers = '';
-		if (isset($this->form['container']) && is_array($this->form['container']) && array_key_exists($name, $this->form['container']))
-		{
+		if (isset($this->form['container']) && is_array($this->form['container'])
+			&& array_key_exists($name, $this->form['container'])
+		) {
 			$container_array = (array) $this->form['container'][$name];
 			foreach ($container_array as $container)
 			{
-				$containers .= (empty($container)) ? '<div style="display: none;"><!-- --></div>' : '<div class="bwp-clear">' . $container . '</div>' . "\n";
+				$containers .= empty($container)
+					? '<div style="display: none;"><!-- --></div>'
+					: '<div class="bwp-clear">' . $container . '</div>' . "\n";
 			}
 		}
 

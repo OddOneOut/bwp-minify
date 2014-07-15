@@ -86,6 +86,8 @@ class BWP_Minify_Rewriter_Apache extends BWP_Minify_AbstractRewriter
 		$rules[] = 'RewriteEngine On';
 		$rules[] = 'RewriteCond %{HTTP:Accept-Encoding} gzip';
 		$rules[] = 'RewriteRule .* - [E=ZIP_EXT:.gz]';
+		$rules[] = 'RewriteCond %{HTTP:Cache-Control} !no-cache';
+		$rules[] = 'RewriteCond %{HTTP:If-Modified-Since} !no-cache';
 		$rules[] = 'RewriteCond %{REQUEST_FILENAME}%{ENV:ZIP_EXT} -f';
 		$rules[] = 'RewriteRule (.*) $1%{ENV:ZIP_EXT} [L]';
 		$rules[] = 'RewriteRule ^minify-b(\d+)-([a-zA-Z0-9-_.]+)\.(css|js)$ '
