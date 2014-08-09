@@ -1,7 +1,7 @@
 .bwp-minify-table-wrapper {
 	position: relative;
 	float: left;
-	width: 65%;
+	width: 70%;
 	background-color: #ffffff;
 	border: 1px solid #cccccc;
 	/* padding: 5px; */
@@ -35,7 +35,7 @@
 	padding: 4px 5px;
 }
 .bwp-minify-detector-table td input, .bwp-minify-detector-table td input:focus {
-	width: 300px;
+	width: 350px;
 	border: none;
 	background: none;
 	box-shadow: none;
@@ -60,7 +60,7 @@
 	overflow: auto;
 }
 .bwp-sidebar textarea {
-	width: 90%;
+	width: 95%;
 	margin-top: 10px;
 	display: none;
 }

@@ -108,6 +108,7 @@ class BWP_Minify_Fetcher
 				__('Minify group %s not found.', $this->_domain),
 				$group_handle
 			);
+
 			exit;
 		}
 
@@ -158,7 +159,7 @@ class BWP_Minify_Fetcher
 		if ($min_documentRoot)
 		{
 			$_SERVER['DOCUMENT_ROOT'] = $min_documentRoot;
-			Minify::$isDocRootSet = true;
+			Minify::$isDocRootSet     = true;
 		}
 
 		// set serve options for each file type if needed
@@ -220,14 +221,14 @@ class BWP_Minify_Fetcher
 		if (empty($ext))
 			return $string;
 
-		// if this group has not been detected we serve the regular Minify url,
-		// and detect this group as well so it can be served using friendly url
-		// next time
 		$detector_version = $this->_detector->get_version();
 		$group_hash       = md5($original_string . $detector_version);
 
 		if (false == $this->_is_group_detected($group_hash))
 		{
+			// if this group has not been detected, do so. When this friendly
+			// url is served it should use data from the just-detected group
+			// because this group has not been persistently stored.
 			$group_type = 'js' == $ext ? 'script' : 'style';
 
 			$this->_detector->detect_group(
@@ -235,12 +236,11 @@ class BWP_Minify_Fetcher
 				$original_string,
 				$group_type
 			);
-
-			return $string;
 		}
 
 		// build the friendly url for this minify url
 		global $blog_id;
+
 		$fly_url  = $this->_min_fly_url . 'minify-'
 			. 'b' . $blog_id . '-' . $group_handle
 			. '-' . $group_hash
@@ -260,8 +260,7 @@ class BWP_Minify_Fetcher
 	 */
 	private function _is_group_detected($group_hash)
 	{
-		// get detected groups from db to make sure that they are persistently stored
-		$detected = $this->_detector->get_detected_groups(true);
+		$detected = $this->_detector->get_detected_groups();
 
 		if (0 == sizeof($detected))
 			return false;

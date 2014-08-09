@@ -143,7 +143,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	/**
 	 * Constructor
 	 */
-	function __construct($version = '1.3.0')
+	function __construct($version = '1.3.1')
 	{
 		// Plugin's title
 		$this->plugin_title = 'Better WordPress Minify';
@@ -182,6 +182,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'enable_min_js'           => 'yes',
 			'enable_min_css'          => 'yes',
 			'enable_bloginfo'         => '',
+			'enable_external_origin'  => '', // @since 1.3.1
 			'enable_css_bubble'       => 'yes', // @since 1.3.0 super admin, Minify
 			'enable_cache_file_lock'  => 'yes', // @since 1.3.0 super admin, Minify
 			'enable_debug'            => '', // @since 1.3.0 super admin
@@ -240,7 +241,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 	function upgrade_plugin($from, $to)
 	{
-		if ($to == '1.3.0')
+		if (version_compare($from, '1.3.0', '<'))
 		{
 			// @since 1.3.0 default values of min path and cache dir is empty,
 			// also look for 'Better-WordPress-Minify-1.3.0' string for users
@@ -249,6 +250,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$this->_reset_min_path($options);
 			$this->_reset_cache_dir($options);
 			update_option(BWP_MINIFY_OPTION_GENERAL, $options);
+		}
+
+		if (version_compare($from, '1.3.1', '<'))
+		{
+			$this->detector->clear_logs('enqueue');
 		}
 	}
 
@@ -315,6 +321,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		require_once dirname(__FILE__) . '/class-bwp-minify-cdn.php';
 
 		$this->_load_rewriter_class();
+
+		// init the detector class, responsible for detecting and logging
+		// enqueued files
+		$this->detector = new BWP_Enqueued_Detector($this->options, $this->domain);
+		$this->detector->set_log(BWP_MINIFY_DETECTOR_LOG);
 	}
 
 	private function _reset_min_path(&$options = false)
@@ -402,6 +413,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$http_host = !empty($url['port'])
 				? $http_host . ':' . $url['port']
 				: $http_host;
+		}
+
+		// @since 1.3.1 ensure that we use consistent protocol
+		if (is_ssl() && 0 !== strpos('https', $http_host))
+		{
+			// if SSL is on and our detected http host is still using `http`
+			// protocol, replace it with the `https` protocol
+			$http_host = str_replace('http://', 'https://', $http_host);
 		}
 
 		return $http_host;
@@ -740,11 +759,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$this->fly_min_path = $this->get_fly_min_path();
 		$this->fly_min_url  = $this->get_fly_min_url();
 
-		// init the detector class, responsible for detecting and logging
-		// enqueued files
-		$this->detector = new BWP_Enqueued_Detector($this->options, $this->domain);
-		$this->detector->set_log(BWP_MINIFY_DETECTOR_LOG);
-
 		// init fetcher class if needed, responsible for serving friendly minify urls
 		if ('yes' == $this->options['enable_fly_min'])
 		{
@@ -812,6 +826,12 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$sp_page = sp_get_option('sfpage');
 			if (is_page($sp_page))
 				return false;
+		}
+
+		// @since 1.3.1 ignore Maintenance plugin
+		if (bwp_is_maintenance_on())
+		{
+			return false;
 		}
 
 		return true;
@@ -992,6 +1012,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					'input_custom_buster',
 					'enable_min_js',
 					'enable_min_css',
+					'enable_external_origin',
 					'enable_bloginfo',
 					'enable_css_bubble',
 					'enable_cache_file_lock',
@@ -1045,6 +1066,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'checkbox',
 						'checkbox',
 						'checkbox',
+						'checkbox',
 						'input',
 						'input',
 						'select',
@@ -1062,6 +1084,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						__('Minify JS files automatically?', $this->domain),
 						__('Minify CSS files automatically?', $this->domain),
 						__('Minify <code>bloginfo()</code> stylesheets?', $this->domain),
+						__('Leave external files at their original positions?', $this->domain),
 						__('URL path to Minify library (relative to domain root)', $this->domain),
 						__('One minify string will contain', $this->domain),
 						__('For cache buster, use', $this->domain),
@@ -1078,6 +1101,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'cb1',
 						'cb3',
 						'cb2',
+						'ext_origin',
 						'input_minpath',
 						'input_maxfiles',
 						'select_buster_type',
@@ -1113,12 +1137,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						)
 					),
 					'checkbox' => array(
-						'cb1' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', $this->domain) => 'enable_min_js'),
-						'cb3' => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', $this->domain) => 'enable_min_css'),
-						'cb2' => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', $this->domain) => 'enable_bloginfo'),
-						'cb4' => array(sprintf(__('move all <code>@import</code> rules in CSS files to the top. More info <a href="%s" target="_blank">here</a>.', $this->domain), $this->get_url('min_css_bubble')) => 'enable_css_bubble'),
-						'cb5' => array(__('disable this if filesystem is NFS.', $this->domain) => 'enable_cache_file_lock'),
-						'cb6' => array(sprintf(__('only enable this when minification does not work as expected. More info <a href="%s" target="_blank">here</a>.', $this->domain), $this->get_url('min_debug')) => 'enable_debug')
+						'cb1'        => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', $this->domain) => 'enable_min_js'),
+						'cb3'        => array(__('you can still use <code>bwp_minify()</code> helper function if you disable this.', $this->domain) => 'enable_min_css'),
+						'cb2'        => array(__('enable this for themes that use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>). If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it.', $this->domain) => 'enable_bloginfo'),
+						'ext_origin' => array(__('enable this to improve compatibility with plugins/themes that print external JS/CSS files directly, for e.g. <code>Simple Google Maps Short Code</code> plugin or <code>Avada</code> theme.', $this->domain) => 'enable_external_origin'),
+						'cb4'        => array(sprintf(__('move all <code>@import</code> rules in CSS files to the top. More info <a href="%s" target="_blank">here</a>.', $this->domain), $this->get_url('min_css_bubble')) => 'enable_css_bubble'),
+						'cb5'        => array(__('disable this if filesystem is NFS.', $this->domain) => 'enable_cache_file_lock'),
+						'cb6'        => array(sprintf(__('only enable this when minification does not work as expected. More info <a href="%s" target="_blank">here</a>.', $this->domain), $this->get_url('min_debug')) => 'enable_debug')
 					),
 					'input' => array(
 						'input_minpath' => array(
@@ -1194,6 +1219,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					'input_custom_buster',
 					'enable_min_js',
 					'enable_min_css',
+					'enable_external_origin',
 					'enable_bloginfo',
 					'enable_css_bubble',
 					'enable_cache_file_lock',
@@ -1399,8 +1425,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'heading'
 					),
 					'item_labels' => array (
-						__('Move enqueued JS files to appropriate positions', $this->domain),
-						__('Move enqueued CSS files to appropriate positions', $this->domain)
+						__('Manage enqueued JS files', $this->domain),
+						__('Manage enqueued CSS files', $this->domain)
 					),
 					'item_names' => array(
 						'h1',
@@ -1410,19 +1436,19 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'h1' => '<em>' . sprintf(
 							__('Below you can find a list of enqueued JS files '
 							. 'detected by this plugin. Press <strong>select</strong> and '
-							. 'then choose an appropriate position for selected JS file. '
+							. 'then choose to perform an appropriate action on selected JS file. '
 							. 'You can also directly type in one script handle (<strong>NOT '
 							. 'filename/script src</strong>) per line in the input field if '
-							. 'you want. More info <a href="%s#positioning_your_files" target="_blank">here</a>.', $this->domain),
+							. 'you want. More info <a href="%s#manage_enqueued_files" target="_blank">here</a>.', $this->domain),
 							$this->plugin_url
 						) . '</em>',
 						'h2' => '<em>' . sprintf(
 							__('Below you can find a list of enqueued CSS files '
 							. 'detected by this plugin. Press <strong>select</strong> and '
-							. 'then choose an appropriate position for selected CSS file. '
+							. 'then choose to perform an appropriate action on selected CSS file. '
 							. 'You can also directly type in one style handle (<strong>NOT '
 							. 'filename/style src</strong>) per line in the input field if '
-							. 'you want. More info <a href="%s#positioning_your_files" target="_blank">here</a>.', $this->domain),
+							. 'you want. More info <a href="%s#manage_enqueued_files" target="_blank">here</a>.', $this->domain),
 							$this->plugin_url
 						) . '</em>'
 					),
@@ -1657,9 +1683,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _show_enqueued_styles()
 	{
 		$fields = array(
-			'input_style_ignore'   => __('Styles to be ignored (not minified)', $this->domain),
-			'input_style_direct'   => __('Styles to be minified and then printed separately', $this->domain),
-			'input_style_oblivion' => __('Styles to be forgotten (to remove duplicate styles)', $this->domain)
+			'input_style_direct'   => __('Styles to stay at original positions', $this->domain),
+			'input_style_ignore'   => __('Styles to NOT minify', $this->domain),
+			'input_style_oblivion' => __('Styles to remove', $this->domain)
 		);
 
 		return $this->_show_enqueued('style', $fields);
@@ -1668,11 +1694,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	private function _show_enqueued_scripts()
 	{
 		$fields = array(
-			'input_ignore'   => __('Scripts to be ignored (not minified)', $this->domain),
-			'input_direct'   => __('Scripts to be minified and then printed separately', $this->domain),
-			'input_header'   => __('Scripts to be minified in header', $this->domain),
-			'input_footer'   => __('Scripts to be minified in footer', $this->domain),
-			'input_oblivion' => __('Scripts to be forgotten (to remove duplicate scripts)', $this->domain)
+			'input_header'   => __('Scripts to move to header', $this->domain),
+			'input_footer'   => __('Scripts to move to footer', $this->domain),
+			'input_direct'   => __('Scripts to stay at original positions', $this->domain),
+			'input_ignore'   => __('Scripts to NOT minify', $this->domain),
+			'input_oblivion' => __('Scripts to remove', $this->domain)
 		);
 
 		return $this->_show_enqueued('script', $fields);
@@ -1705,7 +1731,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				: $this->options[$field];
 ?>
 				<li>
-					<a class="position-handle" data-position="<?php echo $field; ?>"
+					<a class="input-handle" data-field="<?php echo $field; ?>"
 						href="#"><span class="bwp-sign">+</span> <?php echo $label ?></a>
 					<textarea name="<?php echo $field ?>"
 						cols="20" rows="5"><?php esc_html_e($value); ?></textarea>
@@ -2318,11 +2344,12 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	}
 
 	/**
-	 * Checks whether the media files have been included in Minify string or not
+	 * Checks whether the media files have been put into a particular position
 	 *
 	 * @return bool
+	 * @access private
 	 */
-	function is_in($handle, $position = 'header')
+	private function _is_in($handle, $position = 'header')
 	{
 		if (!isset($this->print_positions[$position])
 			|| !is_array($this->print_positions[$position])
@@ -2332,6 +2359,28 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 		if (in_array($handle, $this->print_positions[$position]))
 			return true;
+	}
+
+	/**
+	 * Puts media files into a particular position
+	 *
+	 * @param $position string
+	 * @param $handles array|string
+	 * @param $order string 'append' or 'prepend', either add to the end or the
+	 *        beginning of the position array
+	 *
+	 * @return void
+	 * @access private
+	 */
+	private function _put_in($position, $handles)
+	{
+		$handles = (array) $handles;
+
+		foreach ($handles as $handle)
+		{
+			if (!in_array($handle, $this->print_positions[$position]))
+				$this->print_positions[$position][] = $handle;
+		}
 	}
 
 	/**
@@ -2567,7 +2616,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return $src;
 	}
 
-	function init_todo_item($handle, $type = 'script')
+	private function _init_todo_item($handle, $type)
 	{
 		global $wp_scripts, $wp_styles;
 
@@ -2581,7 +2630,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$src       = trim($item->src);
 
 		$todo_item = array(
-			'position' => 'dummy', // 'dummy', 'header', 'footer', or 'footer{n}'
+			'position' => 'dummy', // 'dummy', 'original', 'header', 'footer', or 'footer{n}'
 			'min'      => true, // expect to be minified
 			'wp'       => false, // expect to be handled by WP
 			'forget'   => false, // put into oblivion or not
@@ -2591,41 +2640,139 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 		// look for dependencies of this item
 		$deps = $item->deps;
-		if ($deps && is_array($deps) && 0 < sizeof($deps)) {
+		if ($deps && is_array($deps) && 0 < sizeof($deps))
 			$todo_item['depend'] = $deps;
-		}
 
 		if (empty($src))
 			return $todo_item;
 
-		if ($this->is_in($handle, $prefix . 'oblivion'))
+		if (!$this->is_local($src))
+		{
+			// if this item is external, do not minify
+			$todo_item['min'] = false;
+
+			$is_external_origin = $this->options['enable_external_origin'] == 'yes'
+				|| (defined('BWP_MINIFY_ENABLE_EXTERNAL_ORIGIN') && BWP_MINIFY_ENABLE_EXTERNAL_ORIGIN)
+				? true : false;
+
+			if ($type == 'script'
+				&& $is_external_origin
+				&& !$this->_is_in($handle, 'header')
+				&& !$this->_is_in($handle, 'footer')
+			) {
+				// if this item is script, and is not forced to header/footer,
+				// let WordPress handles it
+				$todo_item['wp']       = true;
+				$todo_item['position'] = 'original';
+			}
+		}
+
+		if (('all' != $this->print_positions[$prefix . 'allowed']
+			&& !$this->_is_in($handle, $prefix . 'allowed'))
+			|| $this->_is_in($handle, $prefix . 'ignore')
+			|| !$this->is_source_static($src)
+		) {
+			// If this item is not allowed to be minified, or is ignored
+			// OR if this item is dynamic, no minify
+			$todo_item['min'] = false;
+		}
+
+		if ($this->_is_in($handle, $prefix . 'oblivion'))
 		{
 			// this item is put into oblivion (forget)
-			$todo_item['min'] = false;
-			$todo_item['forget'] = true;
+			$todo_item['min']      = false;
+			$todo_item['wp']       = false;
+			$todo_item['forget']   = true;
 			$todo_item['position'] = 'oblivion';
-			$todo_item['src'] = $src;
+			$todo_item['src']      = $src;
 		}
-		else if (('all' != $this->print_positions[$prefix . 'allowed']
-			&& !$this->is_in($handle, $prefix . 'allowed'))
-			|| !$this->is_source_static($src) || !$this->is_local($src)
-		) {
-			// If this item is specifically disallowed to be minified
-			// OR if this item is dynamic or external, no minify
-			$todo_item['min'] = false;
+		else if ($this->_is_in($handle, $prefix . 'direct'))
+		{
+			// if this item should stay at original position, let WordPress
+			// handles the output. This was originally known as 'minified but
+			// printed separately', but @since 1.3.1 is known as 'stay at original
+			// position', the item will now truly stay at exactly where it is
+			// printed.
+			$todo_item['position'] = 'original';
+			$todo_item['wp']       = true;
 		}
-		else if ($this->is_in($handle, $prefix . 'ignore')
-			|| $this->is_in($handle, $prefix . 'direct')
-		) {
-			// if this item belongs to 'ignore', no minify is needed
-			if ($this->is_in($handle, $prefix . 'ignore'))
-				$todo_item['min'] = false;
 
-			// let WordPress handle the output
-			$todo_item['wp'] = true;
+		if ($todo_item['wp'])
+		{
+			// if this item is handled by WP, put it into the internal WP-todo list
+			$this->_put_in('_' . $prefix . 'wp', $handle);
+
+			if ($todo_item['depend'])
+			{
+				// if this item has dependencies, we need to let WordPress
+				// handles those dependencies as well by putting their handles
+				// in the internal WP-todo list and updating their data
+				$items_to_move = $this->_update_todo_items($todo_item['depend'], array(
+					'position' => 'original',
+					'wp'       => true,
+				), $type);
+
+				// put all dependencies including those at the very top
+				$this->_put_in('_' . $prefix . 'wp', $items_to_move);
+			}
 		}
 
 		return $todo_item;
+	}
+
+	/**
+	 * Updates todo items' data
+	 *
+	 * This should be done interactively when initializing enqueued item and
+	 * prior to minifying to avoid dependency issues. This function will also
+	 * traverse the dependency tree to update all dependencies.
+	 *
+	 * @param $handles string|array handle name or a list of handles to update data
+	 * @param $new_data array new data to use, only update what is provided
+	 * @param $type string either 'script' or 'style'
+	 *
+	 * @since 1.3.1
+	 * @return array a list of handles that have been updated
+	 * @access private
+	 */
+	private function _update_todo_items($handles, $new_data, $type, $recursive = false)
+	{
+		$handles         = (array) $handles;
+		$updated_handles = array();
+
+		if ($type == 'script')
+			$todo_items = &$this->todo_scripts;
+		else
+			$todo_items = &$this->todo_styles;
+
+		foreach ($handles as $handle)
+		{
+			if (!isset($todo_items[$handle])
+				|| $todo_items[$handle]['forget'])
+			{
+				// if no item found or it was forgotten no need to update anything
+				continue;
+			}
+
+			foreach ($new_data as $k => $v)
+			{
+				if (isset($todo_items[$handle][$k]))
+					$todo_items[$handle][$k] = $v;
+			}
+
+			$updated_handles[] = $handle;
+
+			// traverse up the dependency tree if needed
+			if ($todo_items[$handle]['depend'])
+			{
+				$updated_handles = array_merge(
+					$updated_handles,
+					$this->_update_todo_items($todo_items[$handle]['depend'], $new_data, $type, true)
+				);
+			}
+		}
+
+		return $updated_handles;
 	}
 
 	/**
@@ -2682,8 +2829,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 *
 	 * A group can be one of the following types:
 	 * 1. A Minify group: files are minified and combined, printed together
-	 * 2. A WP Minify group: files are minified but separately printed
-	 * 3. A WP group: files are NOT minified and separately printed
+	 * 2. A WP Minify group: files are minified and printed separately at original location
+	 * 3. A WP group: files are NOT minified and printed separately at original location
 	 *
 	 * Apply to a Minify group: If the number of files per group reaches a
 	 * limit (by default the limit is 10) this plugin will split the minify
@@ -2709,6 +2856,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// current item's group
 					$group_deps[$item['group']] = 1;
 				}
+
 				continue;
 			}
 
@@ -2747,6 +2895,60 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	}
 
 	/**
+	 * Marks an enqueued item as done so WordPress doesn't process it later on
+	 *
+	 * @since 1.3.1
+	 * @access private
+	 */
+	private function _mark_as_done($handle, $type)
+	{
+		global $wp_scripts, $wp_styles;
+
+		$media = 'script' == $type ? $wp_scripts : $wp_styles;
+
+		$media->done[] = $handle;
+	}
+
+	/**
+	 * Checks whether an enqueued item has been processed by WordPress
+	 *
+	 * @since 1.3.1
+	 * @access private
+	 */
+	private function _is_done_by_wp($handle, $type)
+	{
+		global $wp_scripts, $wp_styles;
+
+		$media = 'script' == $type ? $wp_scripts : $wp_styles;
+
+		if (in_array($handle, $media->done))
+			return true;
+
+		return false;
+	}
+
+	/**
+	 * Gets a list of items that are handled by WP with the original enqueueing order
+	 *
+	 * @since 1.3.1
+	 * @access private
+	 */
+	private function _get_wp_todo($original_todo, $type)
+	{
+		$temp    = $original_todo;
+		$wp_todo = $type == 'script' ? $this->print_positions['_wp']
+			: $this->print_positions['_style_wp'];
+
+		foreach ($original_todo as $key => $handle)
+		{
+			if (!in_array($handle, $wp_todo))
+				unset($temp[$key]);
+		}
+
+		return array_values($temp);
+	}
+
+	/**
 	 * Builds a list of internal $todo_styles from WP's $todo
 	 *
 	 * @since 1.3.0
@@ -2758,24 +2960,26 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		// @since 1.3.0 add 'dashicons' to default ignore list
 		$this->print_positions['style_allowed'] = apply_filters('bwp_minify_allowed_styles', 'all');
 
+		// @since 1.3.1 add an internal list to control items that must be
+		// handled by WordPress, this is reset every time this function runs
+		$this->print_positions['_style_wp'] = array();
+
 		foreach ($todo as $handle)
 		{
-			$style = $wp_styles->registered[$handle];
-			$todo_style = $this->init_todo_item($handle, 'style');
+			$style      = $wp_styles->registered[$handle];
+			$todo_style = $this->_init_todo_item($handle, 'style');
 
 			if (empty($style->src))
 			{
 				if ($todo_styles['depend'])
-				{
 					$this->todo_styles[$handle] = $todo_style;
-					$wp_styles->done[] = $handle;
-				}
+
 				continue;
 			}
 
 			$todo_style['media'] = 'all'; // can be 'all', 'print', etc.
-			$todo_style['if'] = '';
-			$todo_style['alt'] = '';
+			$todo_style['if']    = '';
+			$todo_style['alt']   = '';
 
 			// if this style has different media type, set it
 			if (!empty($style->args) && 'all' != $style->args)
@@ -2807,7 +3011,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$suffix = isset($style->extra['suffix'])
 						? $style->extra['suffix']
 						: '';
+
 					$rtl_src = str_replace("{$suffix}.css", "-rtl{$suffix}.css", $style->src);
+
 					$todo_style['src'] = $rtl_src;
 				}
 				else
@@ -2815,24 +3021,19 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// add a new todo_rtl as a clone of current todo_style and
 					// make todo_style its dependency
 					$rtl_src = trim($style->extra['rtl']);
-					$todo_rtl = $todo_style;
-					$todo_rtl['src'] = $rtl_src;
+
+					$todo_rtl           = $todo_style;
+					$todo_rtl['src']    = $rtl_src;
 					$todo_rtl['depend'] = array($handle);
-					$todo_rtl['min'] = $this->is_source_static($rtl_src) && $this->is_local($rtl_src);
+					$todo_rtl['min']    = $this->is_source_static($rtl_src) && $this->is_local($rtl_src);
 				}
 			}
 
-			if (true === $todo_style['forget'])
+			if ($todo_style['wp'] || $todo_style['forget'])
 			{
-				// this style is forgotten, we don't process it, and tell
-				// WordPress to forget it as well. We also need to detect this
-				// style as forgotten, the same goes for script
-				do_action('bwp_minify_processed_style', $handle, $todo_style);
-				$wp_styles->done[] = $handle;
-				continue;
+				// this item is handled by WP or forgotten
 			}
-
-			if (did_action('bwp_minify_after_header_styles'))
+			elseif (did_action('bwp_minify_after_header_styles'))
 			{
 				// if this style is registered after the styles are printed, it is
 				// expected in footer
@@ -2854,8 +3055,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				$this->todo_styles[$handle . '_rtl'] = $todo_rtl;
 				$todo_rtl = false;
 			}
-
-			$wp_styles->done[] = $handle;
 		}
 
 		// start minifying
@@ -2869,8 +3068,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$this->late_style_order++;
 		}
 
-		// no more $todo for WordPress because we have done it all
-		return array();
+		return $this->_get_wp_todo($todo, 'style');
 	}
 
 	/**
@@ -2890,15 +3088,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		global $wp_styles;
 
 		$style = $wp_styles->registered[$handle];
-		$src = !empty($item['src']) ? $item['src'] : $style->src;
+		$src   = !empty($item['src']) ? $item['src'] : $style->src;
 
 		if ($item['min'])
 		{
 			// minify is needed
 			$src = $this->process_media_source($src);
 
-			// if WordPress handles this item make sure the $src is
-			// processed and version is not set
 			if ($item['wp'])
 			{
 				// because WordPress needs original $src, we process the
@@ -2907,18 +3103,21 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$this->process_media_source($style->src),
 					$group_handle
 				);
+
 				$style->ver = NULL;
-				// add a new group to hold this item
+
 				$this->min_styles[$group_handle] = array(
-					'depend' => $group_deps,
-					'handle' => $handle,
+					'depend'   => $group_deps,
+					'handle'   => $handle,
 					'position' => $item['position']
 				);
+
 				$item['group'] = $group_handle;
 			}
 			else
 			{
 				$group_handle = false;
+
 				foreach ($this->min_styles as $_group_handle => $_group)
 				{
 					// pick the first available group that is:
@@ -2926,7 +3125,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// 2. has the same media type
 					// 3. same conditional type, if is a condiional style
 					// 4. same alternate title, if is an alternate style
-					// 5. still has room for more scripts
+					// 5. still has room for more styles
 					// but do not take into account group that is
 					// dependency of this item's own dependencies.
 					if (isset($_group['string']) && $_group['position'] == $item['position']
@@ -2934,8 +3133,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						&& !$this->is_a_dependency($_group_handle, $group_deps, 'style')
 					) {
 						$is_same_media = $_group['media'] == $item['media'];
-						$is_same_if = $_group['if'] == $item['if'];
-						$is_same_alt = $_group['alt'] == $item['alt'];
+						$is_same_if    = $_group['if'] == $item['if'];
+						$is_same_alt   = $_group['alt'] == $item['alt'];
+
 						if ($is_same_media && $is_same_if && $is_same_alt)
 						{
 							$group_handle = $_group_handle;
@@ -2949,6 +3149,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// append to selected group's minify string, only if
 					// this $src has not been added before
 					$group = &$this->min_styles[$group_handle];
+
 					if (!in_array($src, $group['string']))
 					{
 						$group['string'][] = $src;
@@ -2961,21 +3162,23 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						// merge this item's dependencies with the selected
 						// group's deps.
 						$group['depend'] = array_merge($group['depend'], $group_deps);
-						$item['group'] = $group_handle;
+						$item['group']   = $group_handle;
 					}
 				}
 				else
 				{
 					// otherwise make a new group
 					$group_handle = $this->_sanitize_handle($handle);
+
 					$this->min_styles[$group_handle] = array(
-						'depend' => $group_deps,
-						'string' => array($src),
+						'depend'   => $group_deps,
+						'string'   => array($src),
 						'position' => $item['position'],
-						'media' => $item['media'],
-						'alt' => $item['alt'],
-						'if' => $item['if']
+						'media'    => $item['media'],
+						'alt'      => $item['alt'],
+						'if'       => $item['if']
 					);
+
 					$item['group'] = $group_handle;
 				}
 			}
@@ -2984,19 +3187,27 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		{
 			// no minify is needed, add new group to hold this item
 			$this->min_styles[$group_handle] = array(
-				'depend' => $group_deps,
-				'handle' => $handle,
+				'depend'   => $group_deps,
+				'handle'   => $handle,
 				'position' => $item['position']
 			);
+
 			$item['group'] = $group_handle;
 		}
 
-		// if this item has inline styles, mark it to process later
-		if (self::has_inline($handle))
+		if (!$item['wp'])
+			$this->_mark_as_done($handle, 'style');
+
+		if (!$item['wp'] && self::has_inline($handle))
+		{
+			// if this item has inline styles and WP does not handle it, mark
+			// it to process later
 			$this->todo_inline_styles[$group_handle][] = $handle;
+		}
+
+		$item['src'] = $src;
 
 		// update the internal _Todo_ list
-		$item['src'] = $src;
 		$this->todo_styles[$handle] = $item;
 
 		do_action('bwp_minify_processed_style', $handle, $item);
@@ -3020,7 +3231,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		if (!$recursive)
 			do_action('bwp_minify_before_' . $position . '_styles');
 
-		$groups = !$groups ? $this->min_styles : $groups;
+		$groups         = !$groups ? $this->min_styles : $groups;
 		$group_position = $position;
 
 		foreach ($groups as $group_handle => $group)
@@ -3029,14 +3240,24 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			if (!empty($this->min_styles[$group_handle]['done']))
 				continue;
 
+			if ($group['position'] == 'original' || $group['position'] == 'oblivion')
+			{
+				// @since 1.3.1 if this group is handled by WordPress or forgotten,
+				// do not procceed and mark as done
+				$this->min_styles[$group_handle]['done'] = true;
+				continue;
+			}
+
 			// if this is not the correct position for the group, halt the
 			// entire loop but return the correct position so the offending group
 			// can update itself
 			if ($group['position'] != $position)
+			{
 				if ($recursive)
 					return $group['position'];
 				else
 					continue;
+			}
 
 			// print dependencies first
 			$deps = array();
@@ -3047,6 +3268,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					if (isset($this->min_styles[$dep]))
 						$deps[$dep] = $this->min_styles[$dep];
 				}
+
 				$group_position = $this->print_styles($position, $deps, true);
 			}
 
@@ -3059,7 +3281,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$group_handle,
 					$group_position
 				);
+
 				$this->min_styles[$group_handle]['position'] = $group_position;
+
 				continue;
 			}
 
@@ -3067,13 +3291,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			{
 				// if this is a minify string
 				echo $this->get_minify_tag('style', $group, $group_handle);
+
 				// print inline style after if this group has any
 				if (isset($this->todo_inline_styles[$group_handle]))
 					$this->print_inline_styles($this->todo_inline_styles[$group_handle]);
 			}
 			else if (!empty($group['handle']))
 			{
-				// if this should be handled by WordPress
+				// we control the position but not the output
 				$wp_styles->do_item($group['handle']);
 			}
 
@@ -3083,6 +3308,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		if (!$recursive)
 		{
 			do_action('bwp_minify_after_' . $position . '_styles');
+
 			// save detector's log whenever we finish printing a footer{n} batch
 			if (false !== strpos($position, 'footer' . $this->late_style_order))
 				$this->detector->commit_logs();
@@ -3159,10 +3385,14 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		// @since 1.0.5 - 1.0.6
 		$this->print_positions['allowed'] = apply_filters('bwp_minify_allowed_scripts', 'all');
 
+		// @since 1.3.1 add an internal list to control items that must be
+		// handled by WordPress, this is reset every time this function runs
+		$this->print_positions['_wp'] = array();
+
 		foreach ($todo as $handle)
 		{
-			$script = $wp_scripts->registered[$handle];
-			$todo_script = $this->init_todo_item($handle);
+			$script      = $wp_scripts->registered[$handle];
+			$todo_script = $this->_init_todo_item($handle, 'script');
 
 			if (empty($script->src))
 			{
@@ -3171,24 +3401,18 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					// script's src is empty/invalid but it has dependencies so
 					// it's probably a dummy script used to load other scripts
 					$this->todo_scripts[$handle] = $todo_script;
-					$wp_scripts->done[] = $handle;
 				}
+
 				continue;
 			}
 
-			if ('jquery-migrate' == $handle) {
+			if ('jquery-migrate' == $handle)
+			{
 				// jquery-migrate and jquery-core might get separated so we
 				// force jquery-migrate to have jquery-core as its dependecy
 				$todo_script['depend'] = false == $todo_script['depend']
 					? array() : $todo_script['depend'];
 				$todo_script['depend'][] = 'jquery-core';
-			}
-
-			if (true === $todo_script['forget'])
-			{
-				do_action('bwp_minify_processed_script', $handle, $todo_script);
-				$wp_scripts->done[] = $handle;
-				continue;
 			}
 
 			// if this script is registered in footer, or it is registered
@@ -3198,9 +3422,11 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				|| did_action('bwp_minify_after_header_scripts')
 				? true : false;
 
-			// determine the position of the script
-			if (!$this->is_in($handle, 'header')
-				&& ($this->is_in($handle, 'footer') || $expected_in_footer)
+			if ($todo_script['wp'] || $todo_script['forget'])
+			{
+				// this item is handled by WP or is forgotten
+			} elseif (!$this->_is_in($handle, 'header')
+				&& ($this->_is_in($handle, 'footer') || $expected_in_footer)
 			) {
 				// if this script belongs to footer (logically or
 				// 'intentionally') and is not 'forced' to be in header
@@ -3215,7 +3441,6 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			}
 
 			$this->todo_scripts[$handle] = $todo_script;
-			$wp_scripts->done[] = $handle;
 		}
 
 		// start minifying
@@ -3229,8 +3454,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$this->late_script_order++;
 		}
 
-		// no more $todo for WordPress because we have done it all
-		return array();
+		return $this->_get_wp_todo($todo, 'script');
 	}
 
 	/**
@@ -3250,7 +3474,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		global $wp_scripts;
 
 		$script = $wp_scripts->registered[$handle];
-		$src = $script->src;
+		$src    = $script->src;
 
 		if ($item['min'])
 		{
@@ -3263,17 +3487,20 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				// processed and version is not set
 				$script->src = $this->get_minify_src($src, $group_handle);
 				$script->ver = NULL;
+
 				// add a new group to hold this item
 				$this->min_scripts[$group_handle] = array(
-					'depend' => $group_deps,
-					'handle' => $handle,
+					'depend'   => $group_deps,
+					'handle'   => $handle,
 					'position' => $item['position']
 				);
+
 				$item['group'] = $group_handle;
 			}
 			else
 			{
 				$group_handle = false;
+
 				foreach ($this->min_scripts as $_group_handle => $_group)
 				{
 					// pick the first available group in the same position
@@ -3306,18 +3533,20 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						// merge this item's dependencies with the selected
 						// group's deps.
 						$group['depend'] = array_merge($group['depend'], $group_deps);
-						$item['group'] = $group_handle;
+						$item['group']   = $group_handle;
 					}
 				}
 				else
 				{
 					// otherwise make a new group
 					$group_handle = $this->_sanitize_handle($handle);
+
 					$this->min_scripts[$group_handle] = array(
-						'depend' => $group_deps,
-						'string' => array($src),
+						'depend'   => $group_deps,
+						'string'   => array($src),
 						'position' => $item['position']
 					);
+
 					$item['group'] = $group_handle;
 				}
 			}
@@ -3326,19 +3555,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		{
 			// no minify is needed, add new group to hold this item
 			$this->min_scripts[$group_handle] = array(
-				'depend' => $group_deps,
-				'handle' => $handle,
+				'depend'   => $group_deps,
+				'handle'   => $handle,
 				'position' => $item['position']
 			);
+
 			$item['group'] = $group_handle;
 		}
 
-		// if this item has l10n data, mark it to process later
-		if (self::is_l10n($handle))
+		if (!$item['wp'])
+			$this->_mark_as_done($handle, 'script');
+
+		// if this item has l10n data and WP does not handle it, mark it to
+		// process later
+		if (!$item['wp'] && self::is_l10n($handle))
 			$this->todo_l10n[$group_handle][] = $handle;
 
-		// update the internal _Todo_ list
 		$item['src'] = $src;
+
+		// update the internal _Todo_ list
 		$this->todo_scripts[$handle] = $item;
 
 		do_action('bwp_minify_processed_script', $handle, $item);
@@ -3362,7 +3597,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		if (!$recursive)
 			do_action('bwp_minify_before_' . $position . '_scripts');
 
-		$groups = !$groups ? $this->min_scripts : $groups;
+		$groups         = !$groups ? $this->min_scripts : $groups;
 		$group_position = $position;
 
 		foreach ($groups as $group_handle => $group)
@@ -3371,12 +3606,22 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			if (!empty($this->min_scripts[$group_handle]['done']))
 				continue;
 
+			if ($group['position'] == 'original' || $group['position'] == 'oblivion')
+			{
+				// @since 1.3.1 if this group is handled by WordPress or is
+				// forgotten, do not procceed and mark as done
+				$this->min_scripts[$group_handle]['done'] = true;
+				continue;
+			}
+
 			// if this is not the correct position for the group
 			if ($group['position'] != $position)
+			{
 				if ($recursive)
 					return $group['position'];
 				else
 					continue;
+			}
 
 			// print dependencies first
 			$deps = array();
@@ -3387,6 +3632,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					if (isset($this->min_scripts[$dep]))
 						$deps[$dep] = $this->min_scripts[$dep];
 				}
+
 				$group_position = $this->print_scripts($position, $deps, true);
 			}
 
@@ -3398,22 +3644,25 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					$group_handle,
 					$group_position
 				);
+
 				$this->min_scripts[$group_handle]['position'] = $group_position;
+
 				continue;
 			}
 
-			// print this group using minify tag or $wp_scripts->do_item
+			// print this group using minify tag
 			if (isset($group['string']) && 0 < sizeof($group['string']))
 			{
 				// print l10n data first if this group has any
 				if (isset($this->todo_l10n[$group_handle]))
 					$this->print_scripts_l10n($this->todo_l10n[$group_handle]);
+
 				// if this is a minify string
 				echo $this->get_minify_tag('script', $group, $group_handle);
 			}
 			else if (!empty($group['handle']))
 			{
-				// if this should be handled by WordPress
+				// we control the position but not the output
 				$wp_scripts->do_item($group['handle']);
 			}
 
@@ -3423,6 +3672,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		if (!$recursive)
 		{
 			do_action('bwp_minify_after_' . $position . '_scripts');
+
 			// save detector's log whenever we finish printing a footer batch
 			if (false !== strpos($position, 'footer'))
 				$this->detector->commit_logs();

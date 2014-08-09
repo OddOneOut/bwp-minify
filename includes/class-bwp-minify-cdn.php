@@ -75,7 +75,7 @@ class BWP_Minify_CDN
 	{
 		// priority 11 to make sure that this filter is applied after the
 		// fetcher class has finished friendlifying the Minify string
-		add_filter('bwp_get_minify_src', array($this, 'replace_host'), 11, 2);
+		add_filter('bwp_minify_get_src', array($this, 'replace_host'), 11, 2);
 	}
 
 	private function _init()

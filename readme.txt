@@ -4,7 +4,7 @@ Donate link: http://betterwp.net/wordpress-plugins/bwp-minify/
 Tags: minify, minify js, minify css, minify javascript, minify stylesheet, minification, optimization, optimize, stylesheet, css, javascript, js
 Requires at least: 3.0
 Tested up to: 3.9
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv3 or later
 
 Allows you to combine and minify your CSS and JS files to improve page load time.
@@ -83,6 +83,18 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 
 == Changelog ==
 
+= 1.3.1 =
+* **Enhancements**
+    * Added an option to leave external enqueued files at their original positions.
+    * Added compatibility for Maintenance plugin (BWP Minify will be inactive when Maintenance mode is on).
+    * Improved settings on `Manage enqueued files` admin page to allow better control over enqueued files. Take a look at [this updated section](http://betterwp.net/wordpress-plugins/bwp-minify/#manage_enqueued_files) of official documentation for more details.
+    * Improved friendly minify url feature to work better with cache plugins: friendly urls should show up on first load.
+* **Bugs fixed**
+    * Fixed an issue where CDN hosts don't replace the original host properly
+    * Fixed an issue with SSL on `wp-login.php` page
+
+**Important Note**: After updating to 1.3.1, users of `Simple Google Maps Short Code` plugin (or similar ones) and `Avada` theme should go to *BWP Minify > General Options* and turn on `Leave external files at their original positions?` setting to make map shortcodes work.
+
 = 1.3.0 =
 * **New Features**
     * Added support for Friendly Minify strings, e.g. `http://example.com/path/to/script.js` (best used with CDN). This feature should work well on **nginx** server.
@@ -105,8 +117,9 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
     * Changed Minify strings' default length to `10` to avoid errors on certain servers. Users are encouraged to increase/decrease the length when needed, or enable Pretty Minify String instead.
     * Disable `Minify bloginfo()` setting by default. Modern themes should always use the enqueue system for any stylesheet.
     * `admin-bar`, `jquery-core`, and `jquery-migrate` are now ignored by default.
-    * `admin-bar` and `dashicon` are now ignored by default 
-	* Changed default cache age to 1 day instead of 2 hours.
+    * `admin-bar` and `dashicon` are now ignored by default
+    * Changed default cache age to 1 day instead of 2 hours.
+    * Users can now use `BWP_MINIFY_CACHE_DIR` and `BWP_MINIFY_MIN_PATH` constants to override the Cache Directory and Min Path setting in admin. This can become useful when mirroring a site.
     * Other minor enhancements.
 * **Misc**
     * Added a Serbo-Croatian translation - Thanks to Borisa Djuraskovic!

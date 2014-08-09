@@ -304,7 +304,7 @@ class BWP_Enqueued_Detector
 		$logs = get_option($key);
 
 		$this->_log_key = $key;
-		$this->_logs = !empty($logs) ? (array) $logs : array();
+		$this->_logs    = !empty($logs) ? (array) $logs : array();
 		$this->_db_logs = $this->_logs;
 
 		$this->_prepare_logs();
@@ -347,12 +347,12 @@ class BWP_Enqueued_Detector
 		$actions = 'script' == $type
 			? array('header'   => __('move to header', $this->_domain),
 					'footer'   => __('move to footer', $this->_domain),
-					'direct'   => __('print separately', $this->_domain),
-					'ignore'   => __('ignore', $this->_domain),
-					'oblivion' => __('forget', $this->_domain))
-			: array('style_direct'   => __('print separately', $this->_domain),
-					'style_ignore'   => __('ignore', $this->_domain),
-					'style_oblivion' => __('forget', $this->_domain));
+					'direct'   => __('stay at position', $this->_domain),
+					'ignore'   => __('not minify', $this->_domain),
+					'oblivion' => __('remove', $this->_domain))
+			: array('style_direct'   => __('stay at position', $this->_domain),
+					'style_ignore'   => __('not minify', $this->_domain),
+					'style_oblivion' => __('remove', $this->_domain));
 
 		if (0 < sizeof($log)) :
 		foreach ($log as $item) :
@@ -384,7 +384,7 @@ class BWP_Enqueued_Detector
 			foreach ($actions as $position => $action) :
 ?>
 						| <a href="#" class="action-handle"
-							data-position="<?php echo $position; ?>"><?php echo $action; ?></a>
+							data-action="<?php echo $position; ?>"><?php echo $action; ?></a>
 <?php
 			endforeach;
 ?>
@@ -437,45 +437,46 @@ class BWP_Enqueued_Detector
 		}
 
 		$min = $item['min']; // minify needed
-		$wp = $item['wp']; // minify but print separately
+		$wp  = $item['wp']; // printed at original position
 
 		if ($min)
 		{
-			// separated or combined and minified
+			// combined and minified or minified at original position
 			return $wp
-				? sprintf(__('separated in %s', $this->_domain), $position)
+				? __('minified at original', $this->_domain)
 				: sprintf(__('minified in %s', $this->_domain), $position);
 		}
 		else
 		{
-			// ignored or forgotten
-			return 'oblivion' == $position
-				? __('forgotten', $this->_domain)
-				: sprintf(__('ignored in %s', $this->_domain), $position);
+			// ignored or removed
+			if ($wp)
+				return __('ignored at original', $this->_domain);
+			else
+				return 'oblivion' == $position
+					? __('removed', $this->_domain)
+					: sprintf(__('ignored in %s', $this->_domain), $position);
 		}
 	}
 
 	private function _get_position_order($item)
 	{
-		// order of positions: header, separate in header, ignore in header,
-		// footer{n}, separate in footer{n}, ignore in footer{n}, oblivion
+		// order of positions: original, header, footer{n}, oblivion
 		$orders = array(
-			'1_0_header' => 0,
-			'1_1_header' => 1,
-			'0_0_header' => 2,
-			'0_1_header' => 2,
-			'1_0_footer' => 3,
-			'1_1_footer' => 4,
-			'0_0_footer' => 5,
-			'0_1_footer' => 5,
-			'1_1_oblivion' => 6,
+			'1_1_original' => 0,
+			'0_1_original' => 1,
+			'1_0_header'   => 2,
+			'0_0_header'   => 3,
+			'1_0_footer'   => 4,
+			'0_0_footer'   => 5,
 			'1_0_oblivion' => 6,
-			'0_1_oblivion' => 6,
 			'0_0_oblivion' => 6
 		);
-		$order = 0;
 
-		$order = (int) $item['min'] . '_' . (int) $item['wp'] . '_' . $item['position'];
+		// remove the number part for footer{n}
+		$position = preg_replace('/\d$/', '', $item['position']);
+
+		$order = 0;
+		$order = (int) $item['min'] . '_' . (int) $item['wp'] . '_' . $position;
 		$order = $orders[$order];
 
 		return $order;
