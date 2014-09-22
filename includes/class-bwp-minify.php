@@ -149,6 +149,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$this->plugin_title = 'Better WordPress Minify';
 		// Plugin's version
 		$this->set_version($version);
+		$this->set_version('3.1', 'wp');
 		$this->set_version('5.1.6', 'php');
 		// Plugin's language domain
 		$this->domain = 'bwp-minify';
@@ -588,8 +589,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			? dirname(str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME']))
 			: ABSPATH;
 
-		// script filename contains `wp-admin` when in admin so we need to remove it
-		return is_admin() ? str_replace('/wp-admin', '', $wp_doc_root) : $wp_doc_root;
+		// doc root might contain 'network' if on multisite, remove it
+		$wp_doc_root = is_network_admin() ? str_replace('/network', '', $wp_doc_root) : $wp_doc_root;
+
+		// doc root might contain `wp-admin` when in admin, remove it
+		$wp_doc_root = is_admin() ? str_replace('/wp-admin', '', $wp_doc_root) : $wp_doc_root;
+
+		return $wp_doc_root;
 	}
 
 	/**
@@ -1253,14 +1259,15 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						)
 					),
 					'role' => array(
-						'input_minpath'          => 'superadmin',
-						'input_doc_root'         => 'superadmin',
-						'input_cache_dir'        => 'superadmin',
-						'input_maxfiles'         => 'superadmin',
-						'select_time_type'       => 'superadmin',
-						'enable_css_bubble'      => 'superadmin',
-						'enable_cache_file_lock' => 'superadmin',
-						'enable_debug'           => 'superadmin'
+						'input_minpath'    => 'superadmin',
+						'h2'               => 'superadmin',
+						'input_doc_root'   => 'superadmin',
+						'input_cache_dir'  => 'superadmin',
+						'input_maxage'     => 'superadmin',
+						'select_time_type' => 'superadmin',
+						'cb4'              => 'superadmin',
+						'cb5'              => 'superadmin',
+						'cb6'              => 'superadmin'
 					)
 				);
 
@@ -1450,6 +1457,9 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 							. '</p>'
 					),
 					'post' => array(
+					),
+					'role' => array(
+						'input_fly_minpath' => 'superadmin'
 					)
 				);
 
@@ -1724,17 +1734,13 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 		else if ($page == BWP_MINIFY_OPTION_ADVANCED)
 		{
-			// Remove all super admin only settings if we're in multisite
-			// and this is not super-admin
-			if (self::is_normal_admin())
-				$bwp_option_page->kill_html_fields($form, array('input_fly_minpath'));
-
 			// Also remove nginx config path if not on nginx server
 			if (!self::is_nginx() || self::is_normal_admin())
 				$bwp_option_page->kill_html_fields($form, array('input_nginx_config_file'));
 
-			// Append rewrite rules to the form when fly min is enabled
-			if ($this->options['enable_fly_min'] == 'yes')
+			// Append rewrite rules to the form when fly min is enabled, only
+			// for superadmin
+			if ($this->options['enable_fly_min'] == 'yes' && !self::is_normal_admin())
 				$this->_append_fly_rewrite_rules_to_form($form);
 		}
 
@@ -1962,10 +1968,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				$this->rewriter_apache->get_wp_config_file()
 			);
 
-			$apache_rules .= '<br /><br />'
-				. '<textarea class="code" rows="8" cols="90" readonly="readonly">'
+			$apache_rules .= '<br />'
+				. '<textarea class="code" style="margin: 10px 0" rows="8" cols="90" readonly="readonly">'
 				. $this->rewriter_apache->get_generated_wp_rewrite_rules()
-				. '</textarea>';
+				. '</textarea><br />';
 		}
 
 		$apache_rules .= sprintf(
@@ -1973,8 +1979,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$this->rewriter_apache->get_cache_config_file()
 		);
 
-		$apache_rules .= '<br /><br />'
-			. '<textarea class="code" rows="8" cols="90" readonly="readonly">'
+		$apache_rules .= '<br />'
+			. '<textarea class="code" style="margin: 10px 0;" rows="8" cols="90" readonly="readonly">'
 			. $this->rewriter_apache->get_generated_cache_rewrite_rules()
 			. '</textarea>';
 
@@ -1988,8 +1994,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$nginx_rules .= __('Below rules should present in an appropriate position '
 			. 'within your Nginx configuration file.', $this->domain);
 
-		$nginx_rules .= '<br /><br />'
-			. '<textarea class="code" rows="8" cols="90" readonly="readonly">'
+		$nginx_rules .= '<br />'
+			. '<textarea class="code" style="margin: 10px 0" rows="8" cols="90" readonly="readonly">'
 			. $this->rewriter_nginx->get_generated_wp_rewrite_rules()
 			. '</textarea>';
 

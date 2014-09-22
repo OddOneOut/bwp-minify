@@ -2,7 +2,7 @@
 Contributors: OddOneOut
 Donate link: http://betterwp.net/wordpress-plugins/bwp-minify/
 Tags: minify, minify js, minify css, minify javascript, minify stylesheet, minification, optimization, optimize, stylesheet, css, javascript, js
-Requires at least: 3.0
+Requires at least: 3.1
 Tested up to: 4.0
 Stable tag: 1.3.2
 License: GPLv3 or later
@@ -90,6 +90,7 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 * When friendly minify url is enabled, rewrite rules for both Apache and Nginx will be shown. This is to add support for Nginx as a reverse proxy.
 * Fixed a bug that makes the detector fail to commit logs, which results in empty enqueued file lists.
 * Other minor fixes and enhancements.
+* BWP Minify now requires WordPress 3.1.0 or later.
 
 = 1.3.1 =
 * **Enhancements**
