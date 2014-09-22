@@ -36,12 +36,13 @@ class BWP_Minify_CDN
 		if (empty($cdn_host))
 			return $string;
 
-
 		// force SSL when WordPress is on SSL, or use scheme-less URL
 		$ssl_type = $this->_options['select_cdn_ssl_type'];
+
 		$scheme = is_ssl() ? 'https://' : 'http://';
 		$scheme = 'less' == $ssl_type ? '//' : $scheme;
 		$scheme = 'off' == $ssl_type ? 'http://' : $scheme;
+
 		$string = preg_replace('#https?://[^/]+#ui',
 			$scheme . $cdn_host,
 			$string

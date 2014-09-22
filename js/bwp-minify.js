@@ -1,4 +1,18 @@
 jQuery(function($) {
+	// toggle server rewrite rules
+	$('.fly-show-rules-handle').on('click', function(e) {
+		e.preventDefault();
+
+		// hide all current rules
+		$('.fly-min-rules').hide();
+
+		var server = $(this).data('server');
+		var divClass = 'fly-' + server + '-rules';
+
+		$('.' + divClass).show();
+	})
+
+	// manage enqueued files
 	function toggle_input(t, toggle) {
 		var $t     = $(t);
 		var field  = $t.data('field');

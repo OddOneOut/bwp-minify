@@ -70,6 +70,7 @@ class BWP_Enqueued_Detector
 					'sslverify' => apply_filters('https_local_ssl_verify', true)
 				)
 			);
+
 			wp_remote_get($request['url'], $request['args']);
 		}
 	}
@@ -397,12 +398,21 @@ class BWP_Enqueued_Detector
 ?>
 			<tr>
 				<td colspan="5">
-					<?php _e('No enqueued files detected.<br /><br />'
-					. 'Please try visiting a few pages on your site '
-					. 'and then refresh this page.<br /><br />'
-					. 'You should clear this list once in a while '
-					. 'to get rid of files that are no longer being used '
-					. 'as this is not done automatically.', $this->_domain); ?>
+<?php
+			$message = __('No enqueued files detected.<br /><br />'
+					 . 'Please try visiting a few pages on your site '
+					 . 'and then refresh this page.<br /><br />'
+					 . 'You should clear this list once in a while '
+					 . 'to get rid of files that are no longer being used '
+					 . 'as this is not done automatically.', $this->_domain);
+
+			if ($type == 'script' && $this->_options['enable_min_js'] != 'yes')
+				$message = __('JS minification is currently disabled.', $this->_domain);
+			else if ($type == 'style' && $this->_options['enable_min_css'] != 'yes')
+				$message = __('CSS minification is currently disabled.', $this->_domain);
+
+			echo $message;
+?>
 				</td>
 			</tr>
 <?php

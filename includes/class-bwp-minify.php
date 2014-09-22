@@ -72,7 +72,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	/**
 	 * Other options
 	 */
-	var $wp_ver = '', $base = '', $remove_from_base = '', $buster = '', $cache_age = 86400;
+	var $wp_version = '', $base = '', $remove_from_base = '', $buster = '', $cache_age = 86400;
 	var $min_url = '', $min_dir = '', $min_path = '', $min_cache_dir = '';
 	var $fly_min_path = '', $fly_min_url = '';
 	var $doc_root = '', $blog_path = false;
@@ -138,12 +138,12 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @var BWP_Minify_AbstractRewriter
 	 */
-	var $rewriter;
+	var $rewriter, $rewriter_apache, $rewriter_nginx;
 
 	/**
 	 * Constructor
 	 */
-	function __construct($version = '1.3.1')
+	function __construct($version = '1.3.2')
 	{
 		// Plugin's title
 		$this->plugin_title = 'Better WordPress Minify';
@@ -187,6 +187,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'enable_cache_file_lock'  => 'yes', // @since 1.3.0 super admin, Minify
 			'enable_debug'            => '', // @since 1.3.0 super admin
 			'enable_fly_min'          => '', // @since 1.3.0
+			'enable_fly_min_nag'      => '', // @since 1.3.2
 			'enable_cdn'              => '', // @since 1.3.0
 			'select_buster_type'      => 'none',
 			'select_time_type'        => 86400, // super admin, Minify
@@ -227,19 +228,19 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		);
 	}
 
-	function install()
+	public function install()
 	{
 		// if friendly minify url is enabled we need to flush rewrite rules
 		if ('yes' == $this->options['enable_fly_min'])
 			$this->_add_rewrite_rules();
 	}
 
-	function uninstall()
+	public function uninstall()
 	{
 		$this->_remove_rewrite_rules();
 	}
 
-	function upgrade_plugin($from, $to)
+	public function upgrade_plugin($from, $to)
 	{
 		if (version_compare($from, '1.3.0', '<'))
 		{
@@ -262,7 +263,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	{
 		$this->parse_positions();
 
-		$this->wp_ver = get_bloginfo('version');
+		$this->wp_version = get_bloginfo('version');
 
 		// define a few urls that are used throughout the plugin
 		$this->add_url('min_debug',
@@ -300,17 +301,16 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	{
 		// load and init appropriate rewriter class based on server type
 		require_once dirname(__FILE__) . '/rewriter/rewriter.php';
-		if (self::is_nginx())
-		{
-			require_once dirname(__FILE__) . '/rewriter/nginx.php';
-			$this->rewriter = new BWP_Minify_Rewriter_Nginx($this);
-		}
-		else
-		{
-			// if not nginx, assume it's apache
-			require_once dirname(__FILE__) . '/rewriter/apache.php';
-			$this->rewriter = new BWP_Minify_Rewriter_Apache($this);
-		}
+		require_once dirname(__FILE__) . '/rewriter/nginx.php';
+		require_once dirname(__FILE__) . '/rewriter/apache.php';
+
+		// @since 1.3.2 we initiate both rewriter classes to support special
+		// setups such as nginx is used as a reverse proxy for apache
+		$this->rewriter_apache = new BWP_Minify_Rewriter_Apache($this);
+		$this->rewriter_nginx  = new BWP_Minify_Rewriter_Nginx($this);
+
+		// assume apache if not nginx
+		$this->rewriter = self::is_nginx() ? $this->rewriter_nginx : $this->rewriter_apache;
 	}
 
 	protected function load_libraries()
@@ -484,7 +484,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @return string
 	 */
-	function get_min_path()
+	public function get_min_path()
 	{
 		$min_path = empty($this->options['input_minpath'])
 			? $this->get_default_min_path()
@@ -506,7 +506,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @return string
 	 */
-	function get_default_min_dir()
+	public function get_default_min_dir()
 	{
 		$plugin_wp_dir = trailingslashit(plugin_dir_path($this->plugin_file));
 		return $plugin_wp_dir . 'min/';
@@ -518,7 +518,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @return string|bool false if no directory can be found
 	 */
-	function get_min_dir()
+	public function get_min_dir()
 	{
 		if (!empty($this->min_dir))
 			return $this->min_dir;
@@ -581,7 +581,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 	}
 
-	function get_wp_doc_root()
+	public function get_wp_doc_root()
 	{
 		$wp_doc_root = !empty($_SERVER['SCRIPT_FILENAME'])
 			&& $_SERVER['SCRIPT_FILENAME'] != $_SERVER['PHP_SELF']
@@ -598,7 +598,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @return string
 	 */
-	function get_doc_root($path = '')
+	public function get_doc_root($path = '')
 	{
 		$server_doc_root = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
 		$wp_doc_root = $this->get_wp_doc_root();
@@ -621,7 +621,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @return string
 	 */
-	function get_default_cache_dir()
+	public function get_default_cache_dir()
 	{
 		$plugin_wp_dir = plugin_dir_path($this->plugin_file);
 		$cache_dir = trailingslashit($plugin_wp_dir) . 'cache/';
@@ -636,7 +636,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * The default cache directory is `/min/cache/` which can be changed inside
 	 * admin area if `/min/config.php` file is writable (@since 1.3.0).
 	 */
-	function get_cache_dir()
+	public function get_cache_dir()
 	{
 		// return the cache dir as entered by admin
 		// or if cache dir is empty, get cache directory from plugin
@@ -669,7 +669,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 *         qualify URL to minified contents, when false the url path will
 	 *         be returned for further use (such as writing rewrite rules)
 	 */
-	function get_fly_min_path($need_host = false, $from_cache_dir = false)
+	public function get_fly_min_path($need_host = false, $from_cache_dir = false)
 	{
 		// blog path needs to be removed from the fly min path when shown in
 		// setting page but needs to be added when used to contruct the fly url
@@ -736,7 +736,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return $fly_min_path;
 	}
 
-	function get_fly_min_url()
+	public function get_fly_min_url()
 	{
 		if (!empty($this->fly_min_url))
 			return $this->fly_min_url;
@@ -744,7 +744,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return $this->get_fly_min_path(true);
 	}
 
-	function init_properties()
+	public function init_properties()
 	{
 		$this->get_base();
 
@@ -782,7 +782,23 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 */
 	private function _add_rewrite_rules($suppress = true)
 	{
-		return $this->rewriter->add_rewrite_rules($suppress);
+		$result = $this->rewriter->add_rewrite_rules($suppress);
+
+		// failed to add rewrite rules, and required rewrite rules are not
+		// there yet, and errors are suppressed
+		if ($suppress && $result !== true && $result !== 'written')
+		{
+			// turn off friendly minify url feature and set a nag to notify
+			// owner in next refresh
+			$options = get_option(BWP_MINIFY_OPTION_ADVANCED);
+
+			$options['enable_fly_min']     = '';
+			$options['enable_fly_min_nag'] = 'yes';
+
+			update_option(BWP_MINIFY_OPTION_ADVANCED, $options);
+		}
+
+		return $result;
 	}
 
 	private function _remove_rewrite_rules()
@@ -837,7 +853,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		return true;
 	}
 
-	function add_conditional_hooks()
+	public function add_conditional_hooks()
 	{
 		// Certain plugins use a single file to show contents, which doesn't
 		// make use of wp_head and wp_footer action and certain plugins should
@@ -869,7 +885,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 	}
 
-	function pre_init_hooks()
+	public function pre_init_hooks()
 	{
 		// check and update Minify config file whenever this plugin is updated
 		add_action('upgrader_process_complete', array($this, 'check_config_file'), 10, 2);
@@ -923,14 +939,43 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			add_action('template_redirect', array($this, 'add_conditional_hooks'), 8);
 		else
 			$this->add_conditional_hooks();
+
+		// if some errors are needed to be shown, show it now
+		if ($this->options['enable_fly_min_nag'] == 'yes')
+		{
+			add_action('admin_notices', array($this, 'show_fly_min_errors'));
+			add_action('network_admin_notices', array($this, 'show_fly_min_errors'));
+
+			$options = get_option(BWP_MINIFY_OPTION_ADVANCED);
+			$options['enable_fly_min_nag'] = '';
+			update_option(BWP_MINIFY_OPTION_ADVANCED, $options);
+		}
 	}
 
-	function enqueue_media()
+	public function show_fly_min_errors()
 	{
-		if ($this->is_admin_page(BWP_MINIFY_MANAGE))
-		{
+		echo '<div class="error"><p>' . sprintf(
+			__('<strong>Better WordPress Minify</strong> &ndash; '
+			. 'Required rewrite rules for friendly minify url '
+			. 'feature could not be found and could not be added automatically. '
+			. 'Friendly minify url feature has been turned off '
+			. 'to prevent your site from breaking. '
+			. 'You can turn it on again by navigating to %s.', $this->domain),
+			'<em>BWP Minify >> Advanced Options</em>')
+		. '</p></div>';
+	}
+
+	public function enqueue_media()
+	{
+		if ($this->is_admin_page(BWP_MINIFY_OPTION_ADVANCED)
+			|| $this->is_admin_page(BWP_MINIFY_MANAGE)
+		) {
 			wp_enqueue_script('bwp-minify', BWP_MINIFY_JS . '/bwp-minify.js',
 				array('jquery'), false, true);
+		}
+
+		if ($this->is_admin_page(BWP_MINIFY_MANAGE))
+		{
 			wp_enqueue_style('bwp-minify', BWP_MINIFY_CSS . '/bwp-minify.css');
 		}
 	}
@@ -938,10 +983,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	/**
 	 * Build the Menus
 	 */
-	function build_menus()
+	public function build_menus()
 	{
 		// use fancy dashicons if WP version is 3.8+
-		$menu_icon = version_compare($this->wp_ver, '3.8.0', '>=')
+		$menu_icon = version_compare($this->wp_version, '3.8.0', '>=')
 			? 'dashicons-performance'
 			: BWP_MINIFY_IMAGES . '/icon_menu.png';
 
@@ -985,15 +1030,16 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 *
 	 * Utilizes BWP Option Page Builder (@see BWP_OPTION_PAGE)
 	 */
-	function build_option_pages()
+	public function build_option_pages()
 	{
 		if (!current_user_can(BWP_MINIFY_CAPABILITY))
 			wp_die(__('You do not have sufficient permissions to access this page.'));
 
-		$page = $_GET['page'];
+		$page        = $_GET['page'];
 		$active_page = '';
+
 		$original_options = $this->options;
-		$bwp_option_page = new BWP_OPTION_PAGE($page, $this->site_options);
+		$bwp_option_page  = new BWP_OPTION_PAGE($page, $this->site_options);
 
 		// Get option from the database, general options are used for both
 		// 'General Options' page and 'Manage enqueued' page
@@ -1205,6 +1251,16 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						'select_buster_type' => array(
 							'input_custom_buster' => 'input'
 						)
+					),
+					'role' => array(
+						'input_minpath'          => 'superadmin',
+						'input_doc_root'         => 'superadmin',
+						'input_cache_dir'        => 'superadmin',
+						'input_maxfiles'         => 'superadmin',
+						'select_time_type'       => 'superadmin',
+						'enable_css_bubble'      => 'superadmin',
+						'enable_cache_file_lock' => 'superadmin',
+						'enable_debug'           => 'superadmin'
 					)
 				);
 
@@ -1473,8 +1529,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 
 		$option_formats = array(
-			'input_maxfiles' => 'int',
-			'input_maxage' => 'int',
+			'input_maxfiles'   => 'int',
+			'input_maxage'     => 'int',
 			'select_time_type' => 'int'
 		);
 
@@ -1502,6 +1558,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				{
 					if (isset($_POST[$key]))
 					{
+						// make sure inputs are in expected format
 						$bwp_option_page->format_field($key, $option_formats);
 						$option = trim(stripslashes($_POST[$key]));
 					}
@@ -1544,67 +1601,79 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 				$this->add_notice(__('All options have been saved.', $this->domain));
 			}
 
-			// take care of some custom POST actions when form is submitted
-			if ($page == BWP_MINIFY_OPTION_GENERAL && !self::is_normal_admin())
+			// take care of some custom POST actions when form is submitted,
+			// when multisite is active, only do this when the user is a superadmin
+			if ($page == BWP_MINIFY_OPTION_GENERAL)
 			{
-				// try to save the Minify config file
-				$result = $this->create_minify_config_file();
-				if (true === $result)
-				{
-					// config file was successfully written
-					$this->add_notice(sprintf(
-						__('Minify config file <code>%s</code> '
-						. 'has been updated successfully.', $this->domain),
-						$this->min_dir . 'config.php'
-					));
+				// other actions for the general option page
+				if ($original_options['enable_min_js'] != $this->options['enable_min_js']
+					|| $original_options['enable_min_css'] != $this->options['enable_min_css']
+				) {
+					// @since 1.3.2 changed plugin functionality, clear the log
+					$this->detector->clear_logs();
 				}
-				else if ('config' === $result)
+
+				if (!self::is_normal_admin())
 				{
-					// config file is missing
-					$this->add_error(
-						'<strong style="color:red">' . __('Error') . ':</strong> '
-						. sprintf(
-							__('Minify config file <code>config.php</code> could not be found. '
-							. 'The auto-detected directory to look for the config file is <code>%s</code>. '
-							. 'Please manually check if that directory actually exists '
-							. 'and contains the config file.', $this->domain),
-							$this->get_doc_root($this->get_min_path())
-						)
-					);
-				}
-				else if ('put' === $result)
-				{
-					// the write process failed for some reasons
-					$this->add_error(sprintf(
-						'<strong style="color:red">' . __('Error') . ':</strong> '
-						. __('There was an error writing to Minify config file <code>%s</code>. '
-						. 'Please try again.', $this->domain),
-						$this->min_dir . 'config.php'
-					));
-				}
-				else
-				{
-					// config file is not writable, show the auto-generated
-					// contents to admin for manual update
-					$this->add_notice(sprintf(
-						'<strong>' . __('Notice', $this->domain) . ':</strong> '
-						. __('Minify config file <code>%s</code> '
-						. 'is not writable. See '
-						. '<a href="#minify.config.php">below</a> '
-						. 'for details.', $this->domain),
-						$this->min_dir . 'config.php'
-					));
-					$form['container']['h2'] = $this->_show_generated_config($result);
+					// try to save the Minify config file
+					$result = $this->create_minify_config_file();
+					if (true === $result)
+					{
+						// config file was successfully written
+						$this->add_notice(sprintf(
+							__('Minify config file <code>%s</code> '
+							. 'has been updated successfully.', $this->domain),
+							$this->min_dir . 'config.php'
+						));
+					}
+					else if ('config' === $result)
+					{
+						// config file is missing
+						$this->add_error(
+							'<strong style="color:red">' . __('Error') . ':</strong> '
+							. sprintf(
+								__('Minify config file <code>config.php</code> could not be found. '
+								. 'The auto-detected directory to look for the config file is <code>%s</code>. '
+								. 'Please manually check if that directory actually exists '
+								. 'and contains the config file.', $this->domain),
+								$this->get_doc_root($this->get_min_path())
+							)
+						);
+					}
+					else if ('put' === $result)
+					{
+						// the write process failed for some reasons
+						$this->add_error(sprintf(
+							'<strong style="color:red">' . __('Error') . ':</strong> '
+							. __('There was an error writing to Minify config file <code>%s</code>. '
+							. 'Please try again.', $this->domain),
+							$this->min_dir . 'config.php'
+						));
+					}
+					else
+					{
+						// config file is not writable, show the auto-generated
+						// contents to admin for manual update
+						$this->add_notice(sprintf(
+							'<strong>' . __('Notice', $this->domain) . ':</strong> '
+							. __('Minify config file <code>%s</code> '
+							. 'is not writable. See '
+							. '<a href="#minify.config.php">below</a> '
+							. 'for details.', $this->domain),
+							$this->min_dir . 'config.php'
+						));
+						$form['container']['h2'] = $this->_show_generated_config($result);
+					}
 				}
 			}
 			else if ($page == BWP_MINIFY_OPTION_ADVANCED)
 			{
+				// friendly minify url is turned on, add rewrite rules to
+				// server directory config file (e.g. `.htaccess`). This should
+				// not require WordPress's pretty permalink to be turned on
 				if ('yes' != $original_options['enable_fly_min']
 					&& 'yes' == $this->options['enable_fly_min']
 				) {
-					// friendly minify url is turned on, add rewrite rules to
-					// server directory config file (e.g. `.htaccess`). This should
-					// not require WordPress's pretty permalink to be turned on
 					$this->_toggle_rewrite_rules($options, $form);
 				} else if ('yes' == $original_options['enable_fly_min']
 					&& 'yes' != $this->options['enable_fly_min']
@@ -1652,26 +1721,26 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 						)
 					);
 			}
-
-			// Remove all Minify library-related settings if we're in multisite
-			// and this is not super-admin
-			if (self::is_normal_admin())
-				$bwp_option_page->kill_html_fields($form, array(7,8,9,10,11,12,13));
 		}
 		else if ($page == BWP_MINIFY_OPTION_ADVANCED)
 		{
 			// Remove all super admin only settings if we're in multisite
-			// and this is not super-admin, also remove nginx config path if
-			// not on nginx server
+			// and this is not super-admin
 			if (self::is_normal_admin())
-				$bwp_option_page->kill_html_fields($form, array(2));
+				$bwp_option_page->kill_html_fields($form, array('input_fly_minpath'));
+
+			// Also remove nginx config path if not on nginx server
 			if (!self::is_nginx() || self::is_normal_admin())
-				$bwp_option_page->kill_html_fields($form, array(3));
+				$bwp_option_page->kill_html_fields($form, array('input_nginx_config_file'));
+
+			// Append rewrite rules to the form when fly min is enabled
+			if ($this->options['enable_fly_min'] == 'yes')
+				$this->_append_fly_rewrite_rules_to_form($form);
 		}
 
-		// check for rewrite rules if needed, suppress error
-		if ('yes' == $this->options['enable_fly_min'])
-			$this->_add_rewrite_rules();
+		/* // check for rewrite rules if needed, suppress error */
+		/* if ('yes' == $this->options['enable_fly_min']) */
+		/* 	$this->_add_rewrite_rules(); */
 
 		// Assign the form and option array
 		$bwp_option_page->init($form, $options, $this->form_tabs);
@@ -1862,6 +1931,73 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 	}
 
+	private function _append_fly_rewrite_rules_to_form(&$form)
+	{
+		// add rewrite rules to WP root, used by all servers
+		$form['container']['h1'] = array();
+
+		$form['container']['h1'][] = '<strong>' . sprintf(
+			__('Rewrite rules are required for this feature to work properly. '
+			. 'Most of the time this is taken care of automatically by the plugin, '
+			. 'but if you notice an error or you\'re using Nginx as a reverse proxy, '
+			. 'you must manually update your server config files. '
+			. 'More info <a href="%sfaq#rewrite-rules" target="blank">here</a>.', $this->domain),
+			$this->plugin_url)
+		. '</strong>';
+
+		// show a handle to toggle apache rewrite rules
+		$form['container']['h1'][] = '<a href="#" class="fly-show-rules-handle" data-server="apache">'
+			. __('Show rewrite rules for Apache', $this->domain)
+			. '</a>' . ' | <a href="#" class="fly-show-rules-handle" data-server="nginx">'
+			. __('Show rewrite rules for Nginx', $this->domain)
+			. '</a>';
+
+		// show appropriate apache rewrite rules
+		$apache_rules = '<div class="fly-apache-rules fly-min-rules" style="display: none">';
+
+		if ($this->rewriter_apache->is_wp_rewrite_rules_needed())
+		{
+			$apache_rules .=  sprintf(
+				__('Below rules should present at the top of <code>%s</code>:'),
+				$this->rewriter_apache->get_wp_config_file()
+			);
+
+			$apache_rules .= '<br /><br />'
+				. '<textarea class="code" rows="8" cols="90" readonly="readonly">'
+				. $this->rewriter_apache->get_generated_wp_rewrite_rules()
+				. '</textarea>';
+		}
+
+		$apache_rules .= sprintf(
+			__('Below rules should present at the top of <code>%s</code>:'),
+			$this->rewriter_apache->get_cache_config_file()
+		);
+
+		$apache_rules .= '<br /><br />'
+			. '<textarea class="code" rows="8" cols="90" readonly="readonly">'
+			. $this->rewriter_apache->get_generated_cache_rewrite_rules()
+			. '</textarea>';
+
+		$apache_rules .= '</div>';
+
+		$form['container']['h1'][] = $apache_rules;
+
+		// show appropriate nginx rewrite rules
+		$nginx_rules = '<div class="fly-nginx-rules fly-min-rules" style="display: none">';
+
+		$nginx_rules .= __('Below rules should present in an appropriate position '
+			. 'within your Nginx configuration file.', $this->domain);
+
+		$nginx_rules .= '<br /><br />'
+			. '<textarea class="code" rows="8" cols="90" readonly="readonly">'
+			. $this->rewriter_nginx->get_generated_wp_rewrite_rules()
+			. '</textarea>';
+
+		$nginx_rules .= '</div>';
+
+		$form['container']['h1'][] = $nginx_rules;
+	}
+
 	/**
 	 * Writes rewrite rules to server config file when needed
 	 *
@@ -1871,25 +2007,27 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 * @since 1.3.0
 	 * @return void
 	 */
-	private function _toggle_rewrite_rules(&$options, &$form)
+	private function _toggle_rewrite_rules(&$options)
 	{
-		// add rewrite rules to WP root, used by all servers
-		$form['container']['h1'] = array();
+		// do not suppress error
 		$this->rewriter->no_suppress();
+
+		// try to add required rewrite rules to wp's main .htaccess file
 		$result = $this->rewriter->add_wp_rewrite_rules();
 
+		// could not write rewrite rules to wp's main .htaccess file
 		if (true !== $result && 'written' !== $result)
 		{
-			// get appropriate error messages and show it to admin
 			$config_file = $this->rewriter->get_wp_config_file();
 			$error       = $this->_get_rewrite_rules_error($result, $config_file);
+
 			$this->add_error($error);
-			$form['container']['h1'][] = $this->_show_generated_wp_rewrite_rules();
+			/* $form['container']['h1'][] = $this->_show_generated_wp_rewrite_rules(); */
 		}
 
+		// asumming apache, need to add rules to cache directory too
 		if (false == self::is_nginx())
 		{
-			// asumming apache, need to add rules to cache directory too
 			$result      = $this->rewriter->add_cache_rewrite_rules();
 			$config_file = $this->rewriter->get_cache_config_file();
 
@@ -1912,7 +2050,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					. 'automatically to prevent your site from breaking. ', $this->domain)
 				);
 
-				$form['container']['h1'][] = $this->_show_generated_cache_rewrite_rules();
+				/* $form['container']['h1'][] = $this->_show_generated_cache_rewrite_rules(); */
 			}
 			else if (true === $result)
 			{
@@ -1929,7 +2067,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$output  = '<strong>'
 			. __('Could not write Minify library settings to <code>%s</code>. '
 			. 'Please update the config file manually by <em>replacing</em> its current contents '
-			. 'with auto-generated contents as shown below:', $this->domain)
+			. 'with auto-generated rewrite rules as shown below:', $this->domain)
 			. '</strong>';
 		$output  = sprintf($output, $this->min_dir . 'config.php');
 		$output .= '<br /><br />';
@@ -1941,55 +2079,57 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 	private function _show_generated_wp_rewrite_rules()
 	{
-		if (self::is_nginx())
-		{
-			// nginx server only needs rewrite rules in a central config file
-			$rules = $this->rewriter->get_generated_wp_rewrite_rules();
-			$output = '<strong>' . __('Please update the Nginx config file '
-				. 'manually using auto-generated contents as shown below. '
-				. 'It is highly recommended that you create a separate config file '
-				. 'for BWP Minify (e.g. <code>bwp-minify.conf</code>) and include it '
-				. 'directly above where you include your cache plugins\' config files, '
-				. 'as shown <a href="%s" target="_blank">here</a>. ', $this->domain) . '</strong>';
-			$output = sprintf($output, $this->get_url('wp_codex_nginx_rewrite_rules'));
-		}
-		else
-		{
-			// Apache server needs rewrite rules for root WP rewrite rules when
-			// sub-directory multisite is set up
-			$rules = $this->rewriter->get_generated_wp_rewrite_rules();
-			$output = '<strong>' . __('Please update the server config file <code>%s</code> '
-				. 'manually using auto-generated contents as shown below. '
-				. 'It is highly recommended that you paste the contents '
-				. 'at the top of the server config file. '
-				. 'If config file does not exist, you must first create it.', $this->domain) . '</strong>';
-			$output = sprintf($output, $this->rewriter->get_wp_config_file());
-		}
+		/* if (self::is_nginx()) */
+		/* { */
+		/* 	// nginx server only needs rewrite rules in a central config file */
+		/* 	$rules = $this->rewriter->get_generated_wp_rewrite_rules(); */
+		/* 	$output = '<strong>' . __('Please update the Nginx config file ' */
+		/* 		. 'manually using auto-generated contents as shown below. ' */
+		/* 		. 'It is highly recommended that you create a separate config file ' */
+		/* 		. 'for BWP Minify (e.g. <code>bwp-minify.conf</code>) and include it ' */
+		/* 		. 'directly above where you include your cache plugins\' config files, ' */
+		/* 		. 'as shown <a href="%s" target="_blank">here</a>. ', $this->domain) . '</strong>'; */
+		/* 	$output = sprintf($output, $this->get_url('wp_codex_nginx_rewrite_rules')); */
+		/* } */
+		/* else */
+		/* { */
+		/* 	// Apache server needs rewrite rules for root WP rewrite rules when */
+		/* 	// sub-directory multisite is set up */
+		/* 	$rules = $this->rewriter->get_generated_wp_rewrite_rules(); */
+		/* 	$output = '<strong>' . __('Please update the server config file <code>%s</code> ' */
+		/* 		. 'manually using auto-generated contents as shown below. ' */
+		/* 		. 'It is highly recommended that you paste the contents ' */
+		/* 		. 'at the top of the server config file. ' */
+		/* 		. 'If config file does not exist, you must first create it.', $this->domain) . '</strong>'; */
+		/* 	$output = sprintf($output, $this->rewriter->get_wp_config_file()); */
+		/* } */
 
-		$output .= '<br /><br />';
-		$output .= '<textarea class="code" rows="8" cols="90" readonly="readonly">'
-			. $rules . '</textarea>';
+		/* $output .= '<br /><br />'; */
+		/* $output .= '<textarea class="code" rows="8" cols="90" readonly="readonly">' */
+		/* 	. $rules . '</textarea>'; */
 
-		return $output;
+		/* return $output; */
 	}
 
 	private function _show_generated_cache_rewrite_rules()
 	{
-		$rules = $this->rewriter->get_generated_cache_rewrite_rules();
-		$output = '<strong>'
-			. __('Please update the cache directory config file <code>%s</code> '
-			. 'manually using auto-generated contents as shown below. '
-			. 'It is highly recommended that you paste the contents '
-			. 'at the top of the server config file. '
-			. 'If config file does not exist, you must first create it.', $this->domain)
-			. '</strong>';
-		$output = sprintf($output, $this->rewriter->get_cache_config_file());
+		/* $rules = $this->rewriter->get_generated_cache_rewrite_rules(); */
 
-		$output .= '<br /><br />';
-		$output .= '<textarea class="code" rows="8" cols="90" readonly="readonly">'
-			. $rules . '</textarea>';
+		/* $output = '<strong>' */
+		/* 	. __('Please update the cache directory config file <code>%s</code> ' */
+		/* 	. 'manually using auto-generated contents as shown below. ' */
+		/* 	. 'It is highly recommended that you paste the contents ' */
+		/* 	. 'at the top of the server config file. ' */
+		/* 	. 'If config file does not exist, you must first create it.', $this->domain) */
+		/* 	. '</strong>'; */
 
-		return $output;
+		/* $output = sprintf($output, $this->rewriter->get_cache_config_file()); */
+
+		/* $output .= '<br /><br />'; */
+		/* $output .= '<textarea class="code" rows="8" cols="90" readonly="readonly">' */
+		/* 	. $rules . '</textarea>'; */
+
+		/* return $output; */
 	}
 
 	private function _get_rewrite_rules_error($result, $config_file)
@@ -2194,7 +2334,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$result = $this->create_minify_config_file();
 
 		// if friendly minify url is enabled, add rewrite rules to server
-		// config file if needed, suppress any error message
+		// config file if needed
 		if ('yes' == $this->options['enable_fly_min'])
 			$this->_add_rewrite_rules();
 	}
@@ -2307,7 +2447,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			break;
 
 			case 'wpver':
-				$buster = $this->wp_ver;
+				$buster = $this->wp_version;
 			break;
 
 			case 'tver':
@@ -3310,7 +3450,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			do_action('bwp_minify_after_' . $position . '_styles');
 
 			// save detector's log whenever we finish printing a footer{n} batch
-			if (false !== strpos($position, 'footer' . $this->late_style_order))
+			if (false !== strpos($position, 'footer'))
 				$this->detector->commit_logs();
 		}
 
@@ -3338,7 +3478,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		global $wp_styles;
 
 		// this feature is only available on WP 3.3 or higher
-		if (version_compare($this->wp_ver, '3.3', '<'))
+		if (version_compare($this->wp_version, '3.3', '<'))
 			return;
 
 		foreach ($handles as $handle)
@@ -3705,7 +3845,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		{
 			// since WordPress version 3.3: uses
 			// $wp_scripts->print_extra_script instead to print l10n info
-			if (version_compare($this->wp_ver, '3.3', '>='))
+			if (version_compare($this->wp_version, '3.3', '>='))
 				$wp_scripts->print_extra_script($handle);
 			else
 				$wp_scripts->print_scripts_l10n($handle);

@@ -4,8 +4,8 @@
  * @license http://www.gnu.org/licenses/gpl.html GNU GENERAL PUBLIC LICENSE VERSION 3.0 OR LATER
  */
 
-class BWP_OPTION_PAGE {
-
+class BWP_OPTION_PAGE
+{
 	/**
 	 * The form
 	 */
@@ -56,9 +56,9 @@ class BWP_OPTION_PAGE {
 	 */
 	function __construct($form_name = 'bwp_option_page', $site_options = array(), $domain = '')
 	{
-		$this->form_name			= $form_name;
-		$this->site_options			= $site_options;
-		$this->domain				= $domain;
+		$this->form_name    = $form_name;
+		$this->site_options = $site_options;
+		$this->domain       = $domain;
 	}
 
 	/**
@@ -78,7 +78,7 @@ class BWP_OPTION_PAGE {
 		$this->form_tabs        = $form_tabs;
 
 		if (sizeof($this->form_tabs) == 0)
-			$this->form_tabs		= array(__('Plugin Configurations', 'bwp-option-page'));
+			$this->form_tabs = array(__('Plugin Configurations', 'bwp-option-page'));
 	}
 
 	function get_form_name()
@@ -98,26 +98,33 @@ class BWP_OPTION_PAGE {
 			if (!in_array($key, $options))
 				unset($options_default[$key]);
 		}
+
 		return $options_default;
 	}
 
 	function get_db_options($name = '', $options = array())
 	{
 		$db_options = get_option($name);
+
 		if (!$db_options)
+		{
 			update_option($name, $options);
+		}
 		else if (array_keys($options) != array_keys($db_options))
 		{
 			foreach ($db_options as $key => $data)
 				if (isset($options[$key]) && !in_array($key, $this->site_options))
 					$options[$key] = $data;
+
 			update_option($name, $options);
 		}
 		else
 		{
 			foreach ($db_options as $key => $data)
+			{
 				if (!in_array($key, $this->site_options))
 					$options[$key] = $data;
+			}
 		}
 
 		return $options;
@@ -138,10 +145,23 @@ class BWP_OPTION_PAGE {
 			$_POST[$key] = strip_tags($_POST[$key]);
 	}
 
-	function kill_html_fields(&$form = array(), $ids)
+	function kill_html_fields(&$form, $names)
 	{
-		$ids = (array) $ids;
-		$in_keys = array('items', 'item_labels', 'item_names');
+		$ids   = array();
+		$names = (array) $names;
+
+		foreach ($form['item_names'] as $key => $name)
+		{
+			if (in_array($name, $names))
+				$ids[] = $key;
+		}
+
+		$in_keys = array(
+			'items',
+			'item_labels',
+			'item_names'
+		);
+
 		foreach ($ids as $id)
 		{
 			foreach ($in_keys as $key)
@@ -151,41 +171,63 @@ class BWP_OPTION_PAGE {
 
 	/**
 	 * Generate HTML field
-	 *
-	 * @params	they explain themselves
 	 */
 	function generate_html_field($type = '', $data = array(), $name = '', $in_section = false)
 	{
-		$pre_html_field     = '';
-		$post_html_field    = '';
-		$checked            = 'checked="checked" ';
-		$selected           = 'selected="selected" ';
+		$pre_html_field  = '';
+		$post_html_field = '';
 
-		$value              = isset($this->form_options[$name])
+		$checked  = 'checked="checked" ';
+		$selected = 'selected="selected" ';
+
+		$value = isset($this->form_options[$name])
 			? $this->form_options[$name]
 			: '';
 
-		$value              = !empty($this->domain)
+		$value = isset($data['value']) ? $data['value'] : $value;
+
+		$value = !empty($this->domain)
 			&& ('textarea' == $type || 'input' == $type)
 			? __($value, $this->domain)
 			: $value;
 
-		$value              = 'textarea' == $type
-			? esc_html($value)
-			: esc_attr($value);
+		if (is_array($value))
+		{
+			foreach ($value as &$v)
+				$v = is_array($v) ? array_map('esc_attr', $v) : esc_attr($v);
+		}
+		else
+		{
+			$value = 'textarea' == $type
+				? esc_html($value)
+				: esc_attr($value);
+		}
 
-		$array_replace      = array();
-		$array_search       = array('size', 'name', 'value', 'cols',
-									'rows', 'label', 'disabled', 'pre', 'post');
-		$return_html        = '';
+		$array_replace = array();
+		$array_search  = array(
+			'size',
+			'name',
+			'value',
+			'cols',
+			'rows',
+			'label',
+			'disabled',
+			'pre',
+			'post'
+		);
 
-		$br                 = isset($this->form['inline_fields'][$name])
+		$return_html   = '';
+
+		$br = isset($this->form['inline_fields'][$name])
 			&& is_array($this->form['inline_fields'][$name])
 			? ''
 			: "<br />\n";
 
-		$pre                = !empty($data['pre']) ? $data['pre'] : '';
-		$post               = !empty($data['post']) ? $data['post'] : '';
+		$pre   = !empty($data['pre']) ? $data['pre'] : '';
+		$post  = !empty($data['post']) ? $data['post'] : '';
+
+		$param = empty($this->form['params'][$name])
+			? false : $this->form['params'][$name];
 
 		switch ($type)
 		{
@@ -194,25 +236,48 @@ class BWP_OPTION_PAGE {
 			break;
 
 			case 'input':
-				$html_field = (!$in_section) ? '%pre%<input%disabled% size="%size%" type="text" id="' . $name . '" name="' . $name . '" value="' . $value . '" /> <em>%label%</em>' : '<label for="' . $name . '">%pre%<input%disabled% size="%size%" type="text" id="' . $name . '" name="' . $name . '" value="' . $value . '" /> <em>%label%</em></label>';
+				$html_field = !$in_section
+					? '%pre%<input%disabled% size="%size%" type="text" '
+						. 'id="' . $name . '" '
+						. 'name="' . $name . '" '
+						. 'value="' . $value . '" /> <em>%label%</em>'
+					: '<label for="' . $name . '">%pre%<input%disabled% size="%size%" type="text" '
+						. 'id="' . $name . '" '
+						. 'name="' . $name . '" '
+						. 'value="' . $value . '" /> <em>%label%</em></label>';
 			break;
 
 			case 'select':
-				$pre_html_field = '%pre%<select id="' . $name . '" name="' . $name . '">' . "\n";
-				$html_field = '<option %selected%value="%value%" />%option%</option>';
+			case 'select_multi':
+				$pre_html_field = 'select_multi' == $type
+					? '%pre%<select id="' . $name . '" name="' . $name . '[]" multiple>' . "\n"
+					: '%pre%<select id="' . $name . '" name="' . $name . '">' . "\n";
+
+				$html_field = '<option %selected%value="%value%">%option%</option>';
+
 				$post_html_field = '</select>%post%' . $br;
 			break;
 
 			case 'checkbox':
-				$html_field = '<label for="%name%">' . '<input %checked%type="checkbox" id="%name%" name="%name%" value="yes" /> %label%</label>';
+				$html_field = '<label for="%name%">'
+					. '<input %checked%type="checkbox" id="%name%" name="%name%" value="yes" /> %label%</label>';
+			break;
+
+			case 'checkbox_multi':
+				$html_field = '<label for="%name%-%value%">'
+					. '<input %checked%type="checkbox" id="%name%-%value%" name="%name%[]" value="%value%" /> %label%</label>';
 			break;
 
 			case 'radio':
-				$html_field = '<label>' . '<input %checked%type="radio" name="' . $name . '" value="%value%" /> %label%</label>';
+				$html_field = '<label>' . '<input %checked%type="radio" '
+					. 'name="' . $name . '" value="%value%" /> %label%</label>';
 			break;
 
 			case 'textarea':
-				$html_field = '%pre%<textarea%disabled% id="' . $name . '" name="' . $name . '" cols="%cols%" rows="%rows%">' . $value . '</textarea>%post%';
+				$html_field = '%pre%<textarea%disabled% '
+					. 'id="' . $name . '" '
+					. 'name="' . $name . '" cols="%cols%" rows="%rows%">'
+					. $value . '</textarea>%post%';
 			break;
 		}
 
@@ -223,22 +288,91 @@ class BWP_OPTION_PAGE {
 		{
 			$return_html .= sprintf($html_field, $data) . $br;
 		}
-		else if ($type == 'radio' || $type == 'checkbox' || $type == 'select')
-		{
+		else if ($type == 'radio'
+			|| $type == 'checkbox' || $type == 'checkbox_multi'
+			|| $type == 'select' || $type == 'select_multi'
+		) {
 			foreach ($data as $key => $value)
 			{
-				// handle checkbox a little bit differently
 				if ($type == 'checkbox')
 				{
+					// handle checkbox a little bit differently
 					if ($this->form_options[$value] == 'yes')
-						$return_html .= str_replace(array('%value%', '%name%', '%label%', '%checked%'), array($value, $value, $key, $checked), $html_field) . $br;
+					{
+						$return_html .= str_replace(
+							array('%value%', '%name%', '%label%', '%checked%'),
+							array($value, $value, $key, $checked),
+							$html_field
+						);
+
+						$return_html .= apply_filters('bwp_option_after_' . $type . '_' . $name . '_checked', '', $value, $param);
+						$return_html .= $br;
+					}
 					else
-						$return_html .= str_replace(array('%value%', '%name%', '%label%', '%checked%'), array($value, $value, $key, ''), $html_field) . $br;
+					{
+						$return_html .= str_replace(
+							array('%value%', '%name%', '%label%', '%checked%'),
+							array($value, $value, $key, ''),
+							$html_field
+						);
+
+						$return_html .= apply_filters('bwp_option_after_' . $type . '_' . $name, '', $value, $param);
+						$return_html .= $br;
+					}
 				}
-				else if (isset($this->form_options[$name]) && $this->form_options[$name] == $value)
-					$return_html .= str_replace(array('%value%', '%name%', '%label%', '%option%', '%checked%', '%selected%', '%pre%', '%post%'), array($value, $value, $key, $key, $checked, $selected, $pre, $post), $html_field) . $br;
+				else if ($type == 'checkbox_multi')
+				{
+					// handle a multi checkbox differently
+					if (isset($this->form_options[$name])
+						&& is_array($this->form_options[$name])
+						&& (in_array($value, $this->form_options[$name])
+							|| array_key_exists($value, $this->form_options[$name]))
+					) {
+						$return_html .= str_replace(
+							array('%value%', '%name%', '%label%', '%checked%'),
+							array($value, $name, $key, $checked),
+							$html_field
+						);
+
+						$return_html .= apply_filters('bwp_option_after_' . $type . '_' . $name . '_checked', '', $value, $param);
+						$return_html .= $br;
+					}
+					else
+					{
+						$return_html .= str_replace(
+							array('%value%', '%name%', '%label%', '%checked%'),
+							array($value, $name, $key, ''),
+							$html_field
+						);
+
+						$return_html .= apply_filters('bwp_option_after_' . $type . '_' . $name, '', $value, $param);
+						$return_html .= $br;
+					}
+				}
+				else if (isset($this->form_options[$name])
+					&& ($this->form_options[$name] == $value
+						|| (is_array($this->form_options[$name])
+							&& (in_array($value, $this->form_options[$name])
+								|| array_key_exists($value, $this->form_options[$name]))))
+				) {
+					$item_br = $type == 'select' || $type == 'select_multi' ? "\n" : $br;
+
+					$return_html .= str_replace(
+						array('%value%', '%name%', '%label%', '%option%', '%checked%', '%selected%', '%pre%', '%post%'),
+						array($value, $value, $key, $key, $checked, $selected, $pre, $post),
+						$html_field
+					) . $item_br;
+				}
 				else
-					$return_html .= str_replace(array('%value%', '%name%', '%label%', '%option%', '%checked%', '%selected%', '%pre%', '%post%'), array($value, $value, $key, $key, '', '', $pre, $post), $html_field) . $br;
+				{
+					$item_br = $type == 'select' || $type == 'select_multi' ? "\n" : $br;
+
+					$return_html .= str_replace(
+						array('%value%', '%name%', '%label%', '%option%', '%checked%', '%selected%', '%pre%', '%post%'),
+						array($value, $value, $key, $key, '', '', $pre, $post),
+						$html_field
+					) . $item_br;
+				}
 			}
 		}
 		else
@@ -246,12 +380,15 @@ class BWP_OPTION_PAGE {
 			foreach ($array_search as &$keyword)
 			{
 				$array_replace[$keyword] = '';
+
 				if (!empty($data[$keyword]))
 				{
 					$array_replace[$keyword] = $data[$keyword];
 				}
+
 				$keyword = '%' . $keyword . '%';
 			}
+
 			$return_html = str_replace($array_search, $array_replace, $html_field) . $br;
 		}
 
@@ -266,8 +403,10 @@ class BWP_OPTION_PAGE {
 			}
 		}
 
-		// Post
-		$post = (!empty($this->form['post'][$name])) ? ' ' . $this->form['post'][$name] : $post;
+		// html after field
+		$post = !empty($this->form['post'][$name])
+			? ' ' . $this->form['post'][$name]
+			: $post;
 
 		return str_replace('%pre%', $pre, $pre_html_field) . $return_html . str_replace('%post%', $post, $post_html_field) . $inline_html;
 	}
@@ -288,24 +427,28 @@ class BWP_OPTION_PAGE {
 			? 'bwp-option-page-heading-desc'
 			: 'bwp-option-page-inputs';
 
-		// An inline item can hold any HTML markup
-		// An example is to display some kinds of button right be low the label
+		// an inline item can hold any HTML markup, example is to display some
+		// kinds of button right be low the label
 		$inline = '';
+
 		if (isset($this->form['inline']) && is_array($this->form['inline'])
 			&& array_key_exists($name, $this->form['inline'])
 		) {
-			$inline = (empty($this->form['inline'][$name])) ? '' : $this->form['inline'][$name];
+			$inline = empty($this->form['inline'][$name]) ? '' : $this->form['inline'][$name];
 		}
+
 		$inline .= "\n";
 
 		switch ($type)
 		{
 			case 'section':
-
 				if (!isset($this->form[$name]) || !is_array($this->form[$name]))
-				return;
+					return;
 
-				$item_label = '<span class="bwp-opton-page-label">' . $this->form_item_labels[$item_key[0]] . $inline . '</span>';
+				$item_label = '<span class="bwp-opton-page-label">'
+					. $this->form_item_labels[$item_key[0]]
+					. $inline
+					. '</span>';
 
 				foreach ($this->form[$name] as $section_field)
 				{
@@ -320,17 +463,17 @@ class BWP_OPTION_PAGE {
 			break;
 
 			default:
-
 				if (!isset($this->form[$type][$name])
-					|| ($type != 'heading' && !is_array($this->form[$type][$name]))
-				) {
+					|| ($type != 'heading' && !is_array($this->form[$type][$name])))
 					return;
-				}
 
-				/*$item_label = (empty($this->form[$type][$name]['label'])) ? '<label class="bwp-opton-page-label" for="' . $name . '">' . $this->form_item_labels[$item_key[0]] . '</label>' : '<span class="bwp-opton-page-label">' . $this->form_item_labels[$item_key[0]] . '</span>';*/
-				$item_label = $type != 'checkbox' && $type != 'radio'
-					? '<label class="bwp-opton-page-label" for="' . $name . '">' . $this->form_item_labels[$item_key[0]] . $inline . '</label>'
-					: '<span class="bwp-opton-page-label type-' . $type . '">' . $this->form_item_labels[$item_key[0]] . $inline . '</span>';
+				$item_label = $type != 'checkbox' && $type != 'checkbox_multi' && $type != 'radio'
+					? '<label class="bwp-opton-page-label" for="' . $name . '">'
+						. $this->form_item_labels[$item_key[0]] . $inline
+						. '</label>'
+					: '<span class="bwp-opton-page-label type-' . $type . '">'
+						. $this->form_item_labels[$item_key[0]] . $inline
+						. '</span>';
 
 				$item_label = $type == 'heading'
 					? '<h3>' . $this->form_item_labels[$item_key[0]] . '</h3>' . $inline
@@ -341,13 +484,16 @@ class BWP_OPTION_PAGE {
 			break;
 		}
 
-		// A container can hold some result executed by customized script,
+		// a container can hold some result executed by customized script,
 		// such as displaying something when user press the submit button
 		$containers = '';
-		if (isset($this->form['container']) && is_array($this->form['container'])
+
+		if (isset($this->form['container'])
+			&& is_array($this->form['container'])
 			&& array_key_exists($name, $this->form['container'])
 		) {
 			$container_array = (array) $this->form['container'][$name];
+
 			foreach ($container_array as $container)
 			{
 				$containers .= empty($container)
@@ -357,10 +503,17 @@ class BWP_OPTION_PAGE {
 		}
 
 		$pure_return = trim(strip_tags($return_html));
+
 		if (empty($pure_return) && $type == 'heading')
+		{
 			return $item_label . $containers;
+		}
 		else
-			return $item_label . '<p class="' . $input_class . '">' . $return_html . '</p>' . $containers;
+		{
+			return $item_label . '<p class="' . $input_class . '">'
+				. $return_html . '</p>'
+				. $containers;
+		}
 	}
 
 	/**
@@ -371,6 +524,7 @@ class BWP_OPTION_PAGE {
 	function generate_html_form()
 	{
 		$return_str = '<div class="wrap" style="padding-bottom: 20px;">' . "\n";
+
 		if (sizeof($this->form_tabs) >= 2)
 			$return_str .= apply_filters('bwp-admin-form-icon', '<div class="icon32" id="icon-options-general"><br></div>'  . "\n");
 		else
@@ -379,19 +533,23 @@ class BWP_OPTION_PAGE {
 		if (sizeof($this->form_tabs) >= 2)
 		{
 			$count = 0;
+
 			$return_str .= '<h2 class="bwp-option-page-tabs">' . "\n";
 			$return_str .= apply_filters('bwp-admin-plugin-version', '') . "\n";
+
 			foreach ($this->form_tabs as $title => $link)
 			{
 				$count++;
-				$active = ($count == $this->current_tab) ? ' nav-tab-active' : '';
+
+				$active      = $count == $this->current_tab ? ' nav-tab-active' : '';
 				$return_str .= '<a class="nav-tab' . $active . '" href="' . $link . '">' . $title . '</a>' . "\n";
 			}
+
 			$return_str .= '</h2>' . "\n";
 		}
 		else if (!isset($this->form_tabs[0]))
 		{
-			$title = array_keys($this->form_tabs);
+			$title       = array_keys($this->form_tabs);
 			$return_str .= '<h2>' . $title[0] . '</h2>'  . "\n";
 		}
 		else
@@ -399,37 +557,74 @@ class BWP_OPTION_PAGE {
 
 		$return_str .= apply_filters('bwp_option_before_form', '');
 		echo $return_str;
+
 		do_action('bwp_option_action_before_form');
-		$return_str = '';
+
+		$return_str  = '';
 		$return_str .= '<form class="bwp-option-page" name="' . $this->form_name . '" method="post" action="">'  . "\n";
+
 		if (function_exists('wp_nonce_field'))
 		{
 			echo $return_str;
+
 			wp_nonce_field($this->form_name);
+
 			$return_str = '';
 		}
+
 		$return_str .= '<ul>' . "\n";
 
 		// generate filled form
 		if (isset($this->form_items) && is_array($this->form_items))
-		foreach ($this->form_items as $key => $type)
 		{
-			if (!empty($this->form_item_names[$key]) && !empty($this->form_item_labels[$key]))
+			foreach ($this->form_items as $key => $type)
 			{
-				$return_str .= '<li class="bwp-clear">' . $this->generate_html_fields($type, $this->form_item_names[$key]) . '</li>' . "\n";
+				$name = !empty($this->form_item_names[$key])
+					? $this->form_item_names[$key]
+					: '';
+
+				if (isset($this->form['env'])
+					&& !BWP_FRAMEWORK_IMPROVED::is_multisite()
+					&& array_key_exists($name, $this->form['env'])
+					&& $this->form['env'][$name] == 'multisite')
+				{
+					// hide multisite field if not in multisite environment
+					continue;
+				}
+
+				if (isset($this->form['role'])
+					&& BWP_FRAMEWORK_IMPROVED::is_normal_admin()
+					&& array_key_exists($name, $this->form['role'])
+					&& $this->form['role'][$name] == 'superadmin')
+				{
+					// hide superadmin-only fields if user is normal admin
+					continue;
+				}
+
+				if (!empty($name) && !empty($this->form_item_labels[$key])
+				) {
+					$return_str .= '<li class="bwp-clear">'
+						. $this->generate_html_fields($type, $name)
+						. '</li>'
+						. "\n";
+				}
 			}
 		}
 
 		$return_str .= '</ul>' . "\n";
 		$return_str .= apply_filters('bwp_option_before_submit_button', '');
+
 		echo $return_str;
 		do_action('bwp_option_action_before_submit_button');
-		$return_str = '';
-		$return_str .= apply_filters('bwp_option_submit_button', '<p class="submit"><input type="submit" class="button-primary" name="submit_' . $this->form_name . '" value="' . __('Save Changes') . '" /></p>') . "\n";
+
+		$return_str  = '';
+		$return_str .= apply_filters('bwp_option_submit_button',
+			'<p class="submit"><input type="submit" class="button-primary" name="submit_'
+			. $this->form_name . '" value="' . __('Save Changes') . '" /></p>') . "\n";
+
 		$return_str .= '</form>' . "\n";
 		$return_str .= '</div>' . "\n";
 
 		echo $return_str;
 	}
-
 }

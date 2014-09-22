@@ -60,9 +60,15 @@ abstract class BWP_Minify_AbstractRewriter
 		return $this;
 	}
 
+	public function get_config_file()
+	{
+		return $this->config_file;
+	}
+
 	abstract protected function add_rewrite_rules($suppress = true);
 	abstract protected function add_wp_rewrite_rules();
 	abstract protected function add_cache_rewrite_rules();
+	abstract protected function is_wp_rewrite_rules_needed();
 	abstract protected function remove_wp_rewrite_rules();
 	abstract protected function remove_cache_rewrite_rules();
 	abstract protected function get_wp_config_file();

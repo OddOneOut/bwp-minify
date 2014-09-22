@@ -43,6 +43,11 @@ class BWP_Minify_Rewriter_Nginx extends BWP_Minify_AbstractRewriter
 		return $this->get_wp_config_dir();
 	}
 
+	public function is_wp_rewrite_rules_needed()
+	{
+		return true;
+	}
+
 	public function get_wp_rewrite_rules()
 	{
 		// make use of WordPress's base, with blog path removed if any

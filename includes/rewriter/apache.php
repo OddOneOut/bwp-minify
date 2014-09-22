@@ -21,8 +21,10 @@ class BWP_Minify_Rewriter_Apache extends BWP_Minify_AbstractRewriter
 		{
 			default:
 			case '':
-				$this->add_wp_rewrite_rules();
-				$result = $this->add_cache_rewrite_rules();
+				$result = $this->add_wp_rewrite_rules();
+
+				if ($result === true || $result === 'written')
+					$result = $this->add_cache_rewrite_rules();
 				break;
 
 			case 'wp':
@@ -110,31 +112,44 @@ class BWP_Minify_Rewriter_Apache extends BWP_Minify_AbstractRewriter
 		$this->remove_rewrite_rules();
 	}
 
-	public function add_wp_rewrite_rules()
+	public function is_wp_rewrite_rules_needed()
 	{
 		if (!BWP_MINIFY::is_multisite() || BWP_MINIFY::is_subdomain_install())
+			return false;
+
+		$fly_min_path = $this->main->get_fly_min_path();
+
+		// only add these rules if `wp-content` is not already in fly min path
+		if (false !== strpos($fly_min_path, 'wp-content'))
+			return false;
+		
+		return true;
+	}
+
+	public function add_wp_rewrite_rules()
+	{
+		if (!$this->is_wp_rewrite_rules_needed())
 			return true;
 
 		$this->prepare_wp_rewrite_rules();
 
-		// only add these rules if `wp-content` is not already in fly min path
-		$fly_min_path = $this->main->get_fly_min_path();
-		if (false === strpos($fly_min_path, 'wp-content')
-			&& file_exists($this->config_file)
-		) {
-			return $this->write_rewrite_rules($this->rules);
-		}
+		// main wp htaccess files doesn't exist AND wp's root is not writable,
+		// nothing more we can do
+		if (!file_exists($this->config_file) && !is_writable($this->config_dir))
+			return false;
+
+		// this should create a new .htaccess file if it is not already there
+		return $this->write_rewrite_rules($this->rules);
 	}
 
 	public function add_cache_rewrite_rules()
 	{
 		$this->prepare_cache_rewrite_rules();
 
+		// server config file exists, OR doesn't exist but directory is
+		// writable, attempt to create a new file, and write rewrite rules to it
 		if (file_exists($this->config_file) || is_writable($this->config_dir))
 		{
-			// server config file exists, OR doesn't exist but
-			// directory is writable, attempt to create a new file, and
-			// write rewrite rules to it
 			return $this->write_rewrite_rules($this->rules);
 		}
 
@@ -148,6 +163,7 @@ class BWP_Minify_Rewriter_Apache extends BWP_Minify_AbstractRewriter
 		// update the rewrite rules, but provide different error messages
 		if (!file_exists($this->config_dir))
 			return 'exists_dir';
+
 		if (!file_exists($this->config_file) && !is_writable($this->config_dir))
 			return 'write_dir';
 
