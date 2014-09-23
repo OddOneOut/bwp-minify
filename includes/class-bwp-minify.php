@@ -143,7 +143,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	/**
 	 * Constructor
 	 */
-	function __construct($version = '1.3.2')
+	function __construct($version = '1.3.3')
 	{
 		// Plugin's title
 		$this->plugin_title = 'Better WordPress Minify';

@@ -83,14 +83,16 @@ Please [help translate](http://betterwp.net/wordpress-tips/create-pot-file-using
 
 == Changelog ==
 
-= 1.3.2 =
+= 1.3.3 =
+	* Fixed an issue with wrong `min/config.php` file.
 
-* Marked as WordPress 4.0 compatible
-* When updating BWP Minify, friendly minify url should be turned off automatically if required rewrite rules are not found. An appropriate error message will be shown once to notify owners of the site so that they can take appropriate actions.
-* When friendly minify url is enabled, rewrite rules for both Apache and Nginx will be shown. This is to add support for Nginx as a reverse proxy.
-* Fixed a bug that makes the detector fail to commit logs, which results in empty enqueued file lists.
-* Other minor fixes and enhancements.
-* BWP Minify now requires WordPress 3.1.0 or later.
+= 1.3.2 =
+	* Marked as WordPress 4.0 compatible
+	* When updating BWP Minify, friendly minify url should be turned off automatically if required rewrite rules are not found. An appropriate error message will be shown once to notify owners of the site so that they can take appropriate actions.
+	* When friendly minify url is enabled, rewrite rules for both Apache and Nginx will be shown. This is to add support for Nginx as a reverse proxy.
+	* Fixed a bug that makes the detector fail to commit logs, which results in empty enqueued file lists.
+	* Other minor fixes and enhancements.
+	* BWP Minify now requires WordPress 3.1.0 or later.
 
 = 1.3.1 =
 * **Enhancements**
