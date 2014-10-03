@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: BWP Minify\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2012-03-20 21:51+0700\n"
-"PO-Revision-Date: 2012-03-20 22:01+0700\n"
-"Last-Translator: \n"
+"PO-Revision-Date: 2014-10-03 19:12+0100\n"
+"Last-Translator: Polychrome <info@polychrome.ch>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -12,12 +12,21 @@ msgstr ""
 "X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
 "X-Poedit-Basepath: .\n"
 "X-Poedit-SourceCharset: utf-8\n"
+"Language: fr_FR\n"
+"X-Generator: Poedit 1.6.5\n"
 "X-Poedit-SearchPath-0: .\n"
 
 #: includes/class-bwp-framework.php:177
 #, php-format
-msgid "%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</strong> or higher. The plugin will not function until you update your software. Please deactivate this plugin."
-msgstr "%s necesita versiunea de Wordpress <strong>%s</strong> sau mai mare si PHP <strong>%s</strong> sau mai mare. Plugin-ul nu va functiona pana nu actualizati programele. Va rugam dezactivati plugin-ul."
+msgid ""
+"%s requires WordPress <strong>%s</strong> or higher and PHP <strong>%s</"
+"strong> or higher. The plugin will not function until you update your "
+"software. Please deactivate this plugin."
+msgstr ""
+"%s requiert WordPress version <strong>%s</strong> ou supérieure et PHP "
+"version <strong>%s</strong> ou supérieure. Cette extension ne fonctionnera "
+"pas tant que vous n'aurez pas mis à jour votre logiciel. Veuillez désactiver "
+"cette extension."
 
 #: includes/class-bwp-framework.php:188
 msgid "Development Log"
@@ -40,7 +49,8 @@ msgid "Contact"
 msgstr "Contact"
 
 #: includes/class-bwp-framework.php:195
-msgid "You can buy me some special coffees if you appreciate my work, thank you!"
+msgid ""
+"You can buy me some special coffees if you appreciate my work, thank you!"
 msgstr "Vous pouvez m'acheter du café si vous appréciez mon travail, merci :"
 
 #: includes/class-bwp-framework.php:209
@@ -101,14 +111,12 @@ msgid "General Options"
 msgstr "Options Générales"
 
 #: includes/class-bwp-minify.php:224
-#, fuzzy
 msgid "Minify JS files automatically?"
-msgstr "Minifier les fichiers CSS et JS automatiquement ?"
+msgstr "Minifier les fichiers JS automatiquement ?"
 
 #: includes/class-bwp-minify.php:225
-#, fuzzy
 msgid "Minify CSS files automatically?"
-msgstr "Minifier les fichiers CSS et JS automatiquement ?"
+msgstr "Minifier les fichiers CSS automatiquement ?"
 
 #: includes/class-bwp-minify.php:226
 msgid "Minify <code>bloginfo()</code> stylesheets?"
@@ -123,9 +131,8 @@ msgid "Minify URL (double-click to edit)"
 msgstr "URL de Minification (double-cliquer pour la modifier)"
 
 #: includes/class-bwp-minify.php:229
-#, fuzzy
 msgid "Cache directory (double-click to edit)"
-msgstr "URL de Minification (double-cliquer pour la modifier)"
+msgstr "Dossier de cache (double-cliquer pour modifier)"
 
 #: includes/class-bwp-minify.php:230
 msgid "One minify string will contain"
@@ -161,8 +168,19 @@ msgstr "<em>Options s'appliquant aux feuilles de styles et aux scripts</em>"
 
 #: includes/class-bwp-minify.php:242
 #, php-format
-msgid "<em>You can force the position of each script using those inputs below (e.g. you have a script registered in the header but you want to minify it in the footer instead). If you are still unsure, please read more <a href=\"%s#positioning-your-scripts\">here</a>. Type in one script handle (<strong>NOT filename</strong>) per line.</em>"
-msgstr "<em>Vous pouvez forcer la position de chaque script en utilisant les paramètres ci-dessous (ex: vous avez un script enregistré dans l'entête mais vous voulez le voir minifié dans le pied à la place). Si vous n'êtes pas sûr de ce que vous faites, veuillez lire <a href=\"%s#positioning-your-scripts\">ceci</a>. Saisissez un handle de script (<strong>PAS un nom de fichier</strong>) par ligne.</em>"
+msgid ""
+"<em>You can force the position of each script using those inputs below (e.g. "
+"you have a script registered in the header but you want to minify it in the "
+"footer instead). If you are still unsure, please read more <a href="
+"\"%s#positioning-your-scripts\">here</a>. Type in one script handle "
+"(<strong>NOT filename</strong>) per line.</em>"
+msgstr ""
+"<em>Vous pouvez forcer la position de chaque script en utilisant les "
+"paramètres ci-dessous (ex: vous avez un script enregistré dans l'entête mais "
+"vous voulez le voir minifié dans le pied à la place). Si vous n'êtes pas sûr "
+"de ce que vous faites, veuillez lire <a href=\"%s#positioning-your-scripts"
+"\">ceci</a>. Saisissez un handle de script (<strong>PAS un nom de fichier</"
+"strong>) par ligne.</em>"
 
 #: includes/class-bwp-minify.php:246
 msgid "second(s)"
@@ -196,25 +214,51 @@ msgstr "Votre version actuelle de Wordpress"
 msgid "A custom number"
 msgstr "Un numéro personnalisé"
 
-#: includes/class-bwp-minify.php:259
-#: includes/class-bwp-minify.php:260
-#, fuzzy
-msgid "you can still use <code>bwp_minify()</code> helper function if you disable this."
-msgstr "vous pourrez toujours utiliser la fonction <code>bwp_minify()</code> si vous désactiver ceci."
+#: includes/class-bwp-minify.php:259 includes/class-bwp-minify.php:260
+msgid ""
+"you can still use <code>bwp_minify()</code> helper function if you disable "
+"this."
+msgstr ""
+"vous pourrez toujours utiliser la fonction <code>bwp_minify()</code> si vous "
+"désactiver ceci."
 
 #: includes/class-bwp-minify.php:261
-msgid "most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to add it to the main minify string. If you want to minify <code>style.css</code> with the rest of your css files, you must enqueue it."
-msgstr "la plupart des thèmes (ex: Twenty Ten) utilisent <code>bloginfo()</code> pour imprimer la feuille de style principale (ex: <code>style.css</code>) et BWP Minify ne sera pas capable de l'ajouter à la chaîne de minification principale. Si vous voulez minifier <code>style.css</code> avec le reste de vos fichiers CSS, vous devez utiliser la fonction <code>enqueue_style()</code> de Wordpress."
+msgid ""
+"most themes (e.g. Twenty Ten) use <code>bloginfo()</code> to print the main "
+"stylesheet (i.e. <code>style.css</code>) and BWP Minify will not be able to "
+"add it to the main minify string. If you want to minify <code>style.css</"
+"code> with the rest of your css files, you must enqueue it."
+msgstr ""
+"la plupart des thèmes (ex: Twenty Ten) utilisent <code>bloginfo()</code> "
+"pour imprimer la feuille de style principale (ex: <code>style.css</code>) et "
+"BWP Minify ne sera pas capable de l'ajouter à la chaîne de minification "
+"principale. Si vous voulez minifier <code>style.css</code> avec le reste de "
+"vos fichiers CSS, vous devez utiliser la fonction <code>enqueue_style()</"
+"code> de Wordpress."
 
 #: includes/class-bwp-minify.php:264
 #, php-format
-msgid "This should be set automatically. If you think the URL is too long, please read <a href=\"%s#customization\">here</a> to know how to properly modify this."
-msgstr "Ce devrait être configuré automatiquement. Si vous pensez que cette URL est trop longue, veuillez lire <a href=\"%s#customization\">ceci</a> pour apprendre à modifier ce paramètre correctement."
+msgid ""
+"This should be set automatically. If you think the URL is too long, please "
+"read <a href=\"%s#customization\">here</a> to know how to properly modify "
+"this."
+msgstr ""
+"Ce devrait être configuré automatiquement. Si vous pensez que cette URL est "
+"trop longue, veuillez lire <a href=\"%s#customization\">ceci</a> pour "
+"apprendre à modifier ce paramètre correctement."
 
 #: includes/class-bwp-minify.php:265
 #, php-format
-msgid "<strong>Important</strong>: Changing cache directory is a two-step process, which is described in details <a href=\"%s#config\" target=\"_blank\">here</a>. Please note that cache directory must be writable (i.e. CHMOD to 755 or 777)."
+msgid ""
+"<strong>Important</strong>: Changing cache directory is a two-step process, "
+"which is described in details <a href=\"%s#config\" target=\"_blank\">here</"
+"a>. Please note that cache directory must be writable (i.e. CHMOD to 755 or "
+"777)."
 msgstr ""
+"<strong>Important</strong>: Modifier le dossier de cache est un processus en "
+"deux étapes, qui est décrit en détails <a href=\"%s#config\" target=\"_blank"
+"\">ici</a>. Veuillez noter que le dossier de cache doit être inscriptible "
+"(p. ex. CHMOD à 755 ou 777)."
 
 #: includes/class-bwp-minify.php:266
 msgid "file(s) at most."
@@ -229,38 +273,54 @@ msgid "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
 msgstr "<em>&rarr; /min/?f=file.js&amp;ver=</em> "
 
 #: includes/class-bwp-minify.php:278
-msgid "<em><strong>Note:</strong> When you append one of the things above you are basically telling browsers to clear their cached version of your CSS and JS files, which is very useful when you change source files. Use this feature wisely :).</em>"
-msgstr "<em><strong>Note: </strong> Quand vous ajouter l'un des paramètres ci-dessus à la chaîne de minification, cela signifie que vous dites aux navigateurs de mettre à jour leur propre cache de vos fichiers CSS et JS. Cela peut-être utile lorsque vous modifiez vos fichiers sources. Utilisez cette fonction avec parcimonie :).</em>"
+msgid ""
+"<em><strong>Note:</strong> When you append one of the things above you are "
+"basically telling browsers to clear their cached version of your CSS and JS "
+"files, which is very useful when you change source files. Use this feature "
+"wisely :).</em>"
+msgstr ""
+"<em><strong>Note: </strong> Quand vous ajouter l'un des paramètres ci-dessus "
+"à la chaîne de minification, cela signifie que vous dites aux navigateurs de "
+"mettre à jour leur propre cache de vos fichiers CSS et JS. Cela peut-être "
+"utile lorsque vous modifiez vos fichiers sources. Utilisez cette fonction "
+"avec parcimonie :).</em>"
 
 #: includes/class-bwp-minify.php:285
 msgid "Flush the cache"
-msgstr ""
+msgstr "Vider le cache"
 
-#: includes/class-bwp-minify.php:305
-#: includes/class-bwp-minify.php:307
+#: includes/class-bwp-minify.php:305 includes/class-bwp-minify.php:307
 msgid "Notice"
-msgstr ""
+msgstr "Notification"
 
 #: includes/class-bwp-minify.php:305
 #, php-format
 msgid "<strong>%d</strong> cached files have been deleted successfully!"
-msgstr ""
+msgstr "<strong>%d</strong> fichiers de cache ont été supprimés avec succès !"
 
 #: includes/class-bwp-minify.php:307
-msgid "Could not delete any cached files. Please manually check the cache directory."
+msgid ""
+"Could not delete any cached files. Please manually check the cache directory."
 msgstr ""
+"Impossible de supprimer les fichiers mis en cache. Veuillez vérifier le "
+"répertoire du cache manuellement."
 
 #: includes/class-bwp-minify.php:341
 msgid "All options have been saved."
-msgstr ""
+msgstr "Toutes les options ont été enregistrées."
 
 #: includes/class-bwp-minify.php:357
 msgid "Warning"
 msgstr "Avertissement"
 
 #: includes/class-bwp-minify.php:357
-msgid "Cache directory does not exist or is not writable. Please try CHMOD your cache directory to 755. If you still see this warning, CHMOD to 777."
-msgstr "Le dossier de cache n'existe pas ou n'est pas inscriptible. Essayez de CHMOD votre dossier de cache à 755. Si vous voyez encore cet avertissement, CHMOD à 777."
+msgid ""
+"Cache directory does not exist or is not writable. Please try CHMOD your "
+"cache directory to 755. If you still see this warning, CHMOD to 777."
+msgstr ""
+"Le dossier de cache n'existe pas ou n'est pas inscriptible. Essayez de CHMOD "
+"votre dossier de cache à 755. Si vous voyez encore cet avertissement, CHMOD "
+"à 777."
 
 #: includes/class-bwp-minify.php:471
 msgid "empty"
