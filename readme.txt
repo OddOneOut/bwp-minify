@@ -10,6 +10,16 @@ License: GPLv3 or later
 Allows you to combine and minify your CSS and JS files to improve page load time.
 
 == Description ==
+My Fork of  http://betterwp.net/wordpress-plugins/bwp-minify/. In this version when you're log in as an admin the minify script will not run.
+
+### For best result , use this setting : 
+
+**General Options**
+1. Set Cache buster -> use custom number
+2. Cache Age -> 30 Days
+
+**Advanced Options**
+1. Advanced -> enable friendly minify url
 
 Allows you to combine and minify your CSS and JS files to improve page load time. This plugin uses the PHP library [Minify](http://code.google.com/p/minify/) and relies on WordPress's enqueueing system rather than the output buffer, which respects the order of CSS and JS files as well as their dependencies. BWP Minify is very customizable and easy to use.
 
