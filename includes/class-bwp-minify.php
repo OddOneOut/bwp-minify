@@ -3117,7 +3117,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 			if (empty($style->src))
 			{
-				if ($todo_styles['depend'])
+				if ($todo_style['depend'])
 					$this->todo_styles[$handle] = $todo_style;
 
 				continue;
