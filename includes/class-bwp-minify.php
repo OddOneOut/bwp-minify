@@ -2644,7 +2644,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			// compatibility with sub-directory multisite installation
 			$blog_path = $this->_get_blog_path();
 			$src = !empty($blog_path)
-				? preg_replace('#' . $blog_path . '#ui', '/', $src, 1)
+				? preg_replace('#^' . $blog_path . '#ui', '/', $src, 1)
 				: $src;
 
 			// need to remove anything that needs removing from the base
