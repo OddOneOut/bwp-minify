@@ -2365,6 +2365,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 					}
 				}
 				closedir($dh);
+				do_action('bwp_minify_flushed_cache');
 			}
 		}
 
