@@ -3456,8 +3456,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			do_action('bwp_minify_after_' . $position . '_styles');
 
 			// save detector's log whenever we finish printing a footer{n} batch
-			if (false !== strpos($position, 'footer'))
-				$this->detector->commit_logs();
+			// if (false !== strpos($position, 'footer'))
+			// 	$this->detector->commit_logs();
 		}
 
 		return $group_position;
@@ -3820,8 +3820,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			do_action('bwp_minify_after_' . $position . '_scripts');
 
 			// save detector's log whenever we finish printing a footer batch
-			if (false !== strpos($position, 'footer'))
-				$this->detector->commit_logs();
+			// if (false !== strpos($position, 'footer'))
+			// 	$this->detector->commit_logs();
 		}
 
 		return $group_position;
