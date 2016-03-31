@@ -441,7 +441,7 @@ class BWP_FRAMEWORK_IMPROVED
 				}
 			}
 		}
-		$this->options = $options;
+		$this->options = apply_filters('bwp_all_options', $options);
 	}
 
 	protected function pre_init_properties()
