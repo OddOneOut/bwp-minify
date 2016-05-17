@@ -2676,8 +2676,22 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			$src = $src[0];
 		}
 
+		 // Regex for resolving relative paths
+    	$regex = '#\/*[^/\.]+/\.\.#Uu';
+        while (preg_match($regex, $src)) {
+        	$src = preg_replace($regex, '', $src);
+    	}
+
+		// Remove remaining instances of '../'
+		$src = str_replace('../', '', $src);
+
+		// Resolve self-reference paths
 		$src = str_replace('./', '/', $src);
+
+		// Ensure same slash direction
 		$src = str_replace('\\', '/', $src);
+
+		// Reduce multiple slashes to single slash
 		$src = preg_replace('#[/]+#iu', '/', $src);
 		$src = ltrim($src, '/');
 
