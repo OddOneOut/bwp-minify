@@ -2243,6 +2243,8 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 			'ini_set(\'zlib.output_compression\', \'0\')' => ''
 		);
 
+		$configs = apply_filters('bwp_minify_config', $configs);
+
 		$config_lines = array();
 		foreach ($configs as $config_key => $config_value)
 		{
