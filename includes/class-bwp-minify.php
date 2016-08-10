@@ -2689,7 +2689,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 *
 	 * @return string
 	 */
-	function get_minify_src($string, $group_handle = '')
+	function get_minify_src($string, $group_handle = '', $base_path = false)
 	{
 		if (empty($string))
 			return '';
@@ -2701,9 +2701,79 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		$min_url = $this->min_url;
 
 		return apply_filters('bwp_minify_get_src',
-			trailingslashit($min_url) . '?f=' . $string . $buster . $debug_flag,
+			trailingslashit($min_url) . '?' .
+			(empty($base_path)? '' : 'b=' . $base_path . '&') .
+			'f=' . $string . $buster . $debug_flag,
 			$string, $group_handle, $this->buster, $min_url
 		);
+	}
+
+	/**
+	 * Start with an empty array and add paths to make a tree of common paths that branch out to filenames
+	 * @param $path
+	 * @param &$path_tree
+	 */
+	function add_to_path_tree($path, &$path_tree)
+	{
+		$path_parts = explode("/", $path);
+
+		if (count($path_parts) == 1) {
+			$path_tree[] = $path;
+		} else {
+			if (empty($path_tree[$path_parts[0]])) {
+				$path_tree[$path_parts[0]] = [];
+			}
+			$this->add_to_path_tree(join("/", array_splice($path_parts, 1)), $path_tree[$path_parts[0]]);
+		}
+	}
+
+	/**
+	 * Get the paths this list can be split into
+	 * @param $path_tree
+	 * @param string $path
+	 * @return array|string
+	 */
+	function get_base_paths($path_tree, $path = "")
+	{
+		$keys = array_keys($path_tree);
+
+		// Base case: $path_tree problem or we are at a fork in the road
+		if (count($keys) > 1) {
+			$base_paths = [];
+			foreach ($keys as $base_path_end) {
+				$base_paths[] = rtrim($path . "$base_path_end/" . $this->path_to_branch($path_tree[$base_path_end]), "/");
+			}
+			return $base_paths;
+		} else {
+			if (!is_int($keys[0])) {
+				$path .= $keys[0] . "/";
+			}
+			$leaf = reset($path_tree);
+			if (is_array($leaf)) {
+				return $this->get_base_paths(reset($path_tree), $path);
+			} else {
+				// You'll get here if there is only one path
+				return $path . $leaf;
+			}
+		}
+	}
+
+	/**
+	 * Follow branch until you reach a fork in the path, to get longest path available
+	 * @param $path_tree
+	 * @param string $path
+	 * @return string
+	 */
+	function path_to_branch($path_tree, $path = "")
+	{
+		$keys = array_keys($path_tree);
+		if (is_int($keys[0]) || count($path_tree) > 1) {
+			return $path;
+		} else {
+			$path .= $keys[0] . "/";
+			$leaf = reset($path_tree);
+			return $this->path_to_branch($leaf, $path);
+		}
 	}
 
 	function get_minify_tag($type, $group, $group_handle)
@@ -2711,42 +2781,64 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		if (!isset($group['string']))
 			return '';
 
-		$original_string = implode(',', $group['string']);
-		$string = $this->get_minify_src($original_string, $group_handle);
+		$path_tree = [];
+		foreach ($group['string'] as $path) {
+			$this->add_to_path_tree($path, $path_tree);
+		}
+		$base_paths = $this->get_base_paths($path_tree);
 
-		$media  = isset($group['media']) ? $group['media'] : false;
-		$title  = isset($group['alt']) ? $group['alt'] : false;
-		$if     = isset($group['if']) ? $group['if'] : false;
+		$final_tags = "";
+		foreach ($base_paths as $base_path) {
+			$original_strings = [];
+			foreach ($group['string'] as $string) {
+				$file_start = strlen($base_path)+1;
+				if (strpos($string, $base_path . "/") === 0) {
+					$original_strings[] = substr($string, $file_start);
+				}
+			}
+			$original_string = implode(',', $original_strings);
+			if (count($original_strings) > 1) {
+				$string = $this->get_minify_src($original_string, $group_handle, $base_path);
+			} else {
+				// leave off basepaths if only one file
+				$string = $this->get_minify_src($base_path . "/" . $original_string, $group_handle);
+			}
 
-		switch ($type)
-		{
-			case 'script':
-				$return  = "<script type='text/javascript' src='"
-					. esc_url($string)
-					. "'></script>\r\n";
-				break;
+			$media  = isset($group['media']) ? $group['media'] : false;
+			$title  = isset($group['alt']) ? $group['alt'] : false;
+			$if     = isset($group['if']) ? $group['if'] : false;
 
-			case 'style':
-				$return = "<link rel='stylesheet' id='"
-					. esc_attr($group_handle) . "-group-css' href='"
-					. esc_url($string) . "' type='text/css' media='"
-					. esc_attr($media) . "' />\r\n";
+			switch ($type)
+			{
+				case 'script':
+					$return  = "<script type='text/javascript' src='"
+						. esc_url($string)
+						. "'></script>\r\n";
+					break;
 
-				if ($title)
-				{
-					$return = "<link rel='alternate stylesheet' id='"
-						. esc_attr($group_handle) . "-group-css' title='"
-						. esc_attr($title) . "' href='"
+				case 'style':
+					$return = "<link rel='stylesheet' id='"
+						. esc_attr($group_handle) . "-group-css' href='"
 						. esc_url($string) . "' type='text/css' media='"
 						. esc_attr($media) . "' />\r\n";
-				}
-				break;
+
+					if ($title)
+					{
+						$return = "<link rel='alternate stylesheet' id='"
+							. esc_attr($group_handle) . "-group-css' title='"
+							. esc_attr($title) . "' href='"
+							. esc_url($string) . "' type='text/css' media='"
+							. esc_attr($media) . "' />\r\n";
+					}
+					break;
+			}
+
+			if ($if)
+				$return = "<!--[if " . esc_html($if) . "]>\r\n" . $return . "<![endif]-->\r\n";
+
+			$final_tags .= apply_filters('bwp_minify_get_tag', $return, $string, $type, $group);
 		}
-
-		if ($if)
-			$return = "<!--[if " . esc_html($if) . "]>\r\n" . $return . "<![endif]-->\r\n";
-
-		return apply_filters('bwp_minify_get_tag', $return, $string, $type, $group);
+		return $final_tags;
 	}
 
 	function minify_item($src)
