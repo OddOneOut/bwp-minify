@@ -1,0 +1,7 @@
+{
+    "name": "spinmedia/bwp-minify",
+    "type": "wordpress-plugin",
+    "require": {
+        "composer/installers": "~1.0"
+    }
+}
