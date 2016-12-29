@@ -2149,7 +2149,7 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 	 */
 	function check_config_file($upgrader, $data)
 	{
-		if (!isset($data['type']) || !isset($data['action'])
+		if (!isset($data['type']) || !isset($data['action']) || !isset($data['plugin'])
 			|| 'plugin' != $data['type'] || 'update' != $data['action']
 		) {
 			// if this is not a plugin update
