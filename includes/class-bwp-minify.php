@@ -398,7 +398,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 
 	private function _get_http_host()
 	{
-		$home_url  = home_url();
+		$scheme = is_ssl() 
+			? 'https' 
+			: 'http';
+		$home_url  = home_url(null, $scheme);
 		$http_host = '';
 		$matches   = array();
 
