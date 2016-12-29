@@ -937,8 +937,10 @@ class BWP_MINIFY extends BWP_FRAMEWORK_IMPROVED
 		}
 
 		// collect js and css files to be combined and minified
-		if (false === strpos($_SERVER['REQUEST_URI'], 'wp-login.php')
-			&& false === strpos($_SERVER['REQUEST_URI'], 'wp-signup.php'))
+		$not_excluded = false === strpos($_SERVER['REQUEST_URI'], 'wp-login.php')
+			&& false === strpos($_SERVER['REQUEST_URI'], 'wp-signup.php');
+
+		if ( apply_filters('bwp_minify_not_excluded', $not_excluded ) )
 			// a priority of 1 makes BWP Minify compatible with plugins that
 			// use `template_redirect` hook to inject their own templates, such
 			// as BuddyPress.
